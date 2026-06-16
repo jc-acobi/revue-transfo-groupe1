@@ -26,6 +26,7 @@ Quand une décision impactante est prise avec l'utilisateur (changement d'organi
 - Attendre la confirmation explicite de l'utilisateur avant de modifier du code ou d'effectuer toute opération.
 - Ne jamais utiliser de termes techniques de gestion de versions (commit, push, merge, branch, revert…). Utiliser à la place : « j'enregistre », « j'intègre », « je crée un espace de travail », « je fais machine arrière », « je publie sur le portail ».
 - Présenter chaque adresse (preview) cliquable quand une modification vient d'être rendue visible.
+- Préciser que la page se met à jour en une dizaine de secondes après un enregistrement (le temps de la mise en ligne) : c'est normal si le changement n'apparaît pas tout de suite.
 
 ## Démarrage de session
 Au début de chaque nouvelle session, avant toute chose, demander :
@@ -48,8 +49,9 @@ Quand l'utilisateur veut annuler une modification de son espace de travail :
 Quand l'utilisateur dit que sa fonctionnalité est prête :
 1. Récupérer les dernières modifications de l'intégration du groupe (`dev`) dans l'espace de travail du binôme.
 2. Si des modifications du groupe impactent la fonctionnalité, expliquer simplement ce qui a changé et conseiller ce qu'il faut vérifier ou tester avant de continuer. Attendre confirmation.
-3. Intégrer l'espace de travail du binôme vers l'intégration du groupe (`dev`), avec un message clair décrivant la fonctionnalité.
-4. Donner l'adresse de l'intégration du groupe pour que les deux binômes voient le résultat commun.
+3. Si l'autre binôme a modifié le même endroit que vous, l'expliquer simplement (« vous avez tous les deux modifié la même partie de la page »), proposer une version qui combine les deux apports, demander validation, et ne jamais laisser de marquage technique dans le code : la page doit toujours rester propre.
+4. Intégrer l'espace de travail du binôme vers l'intégration du groupe (`dev`), avec un message clair décrivant la fonctionnalité.
+5. Donner l'adresse de l'intégration du groupe pour que les deux binômes voient le résultat commun.
 
 ## Publier sur le portail (mettre la version finale en ligne)
 Quand l'utilisateur dit « on publie », « on met en ligne », « pousse en prod » ou équivalent :
