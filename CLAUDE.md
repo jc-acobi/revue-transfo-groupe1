@@ -68,6 +68,22 @@ Quand l'utilisateur veut annuler des intégrations sur l'intégration du groupe 
 3. Expliquer simplement ce qui va être annulé et qui est impacté.
 4. Attendre confirmation, puis annuler les intégrations jusqu'au point choisi.
 
+## Cadre technique du projet
+Pour que tout fonctionne en ligne immédiatement, sans installation ni manipulation côté serveur, on se limite à des technologies simples :
+- **Pages** : HTML, CSS et JavaScript classiques (on peut charger une librairie depuis Internet via un lien, mais aucune étape de « construction »/compilation).
+- **Partie serveur** : PHP uniquement (il fonctionne directement, sans rien installer).
+- **Données** : la base de données du groupe, via l'assistant `db.php` (voir « Utiliser une base de données »).
+- **À éviter** : tout ce qui exigerait un programme tournant en permanence ou une installation sur le serveur (par exemple Node.js, Python, ou des outils qui compilent le code). Si l'utilisateur demande quelque chose qui irait dans cette direction, le lui expliquer simplement et proposer l'équivalent en PHP ou JavaScript.
+
+## Utiliser une base de données
+Chaque groupe dispose d'une base de données privée, déjà prête et réservée à ses applications. Elle sert à enregistrer et relire des informations (formulaires, listes, contenus…).
+- Pour s'y connecter, utiliser l'assistant fourni `db.php` : il ouvre la connexion à la base du groupe, sans aucun identifiant à saisir (ils restent sur le serveur). Exemple : `require_once __DIR__ . '/db.php';` puis `$bdd = db();` et `$bdd->query("…")`.
+- Les tables peuvent être créées librement selon les besoins de l'application.
+- Garde-fous :
+  - Avant toute opération qui efface ou remplace des données (supprimer une table, vider son contenu…), expliquer clairement ce qui sera perdu et attendre une confirmation explicite.
+  - Ne jamais afficher ni écrire d'identifiant de connexion dans le code ou les pages.
+  - La base est privée au groupe : ne pas chercher à accéder à celle d'un autre groupe.
+
 ## Personnaliser la fiche du portail
 La façon dont l'application du groupe apparaît sur le portail est décrite dans le fichier `manifest.json` :
 - `name` : le nom affiché sur la carte du portail.
