@@ -1,0 +1,25 @@
+name: Deploy binome1
+
+on:
+  push:
+    branches:
+      - binome1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Le gabarit lui-meme ne deploie pas : seuls les depots de groupe instancies le font.
+    if: github.repository != 'jc-acobi/revue-transfo'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /var/www/workshop/__GROUPE__/binome1
+            git pull origin binome1

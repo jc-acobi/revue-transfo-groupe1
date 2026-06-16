@@ -1,0 +1,25 @@
+name: Deploy prod (portail)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Le gabarit lui-meme ne deploie pas : seuls les depots de groupe instancies le font.
+    if: github.repository != 'jc-acobi/revue-transfo'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /var/www/apps/__GROUPE__
+            git pull origin main
