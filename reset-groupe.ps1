@@ -14,21 +14,19 @@
 #>
 param([switch]$Pousser)
 
-$ErrorActionPreference = 'Stop'
-
 $base = git rev-parse --verify etat-initial 2>$null
 if (-not $base) {
-  Write-Error "Repère 'etat-initial' introuvable : ce dépôt n'a pas été instancié avec le repère de remise à neuf."
+  Write-Host "Repère 'etat-initial' introuvable : ce dépôt n'a pas été instancié avec le repère de remise à neuf."
   exit 1
 }
 
-git checkout main | Out-Null
+git checkout main
 git reset --hard $base
 foreach ($b in 'dev', 'binome1', 'binome2') { git branch -f $b $base }
 
 if ($Pousser) {
   git push --force origin main dev binome1 binome2
-  Write-Host "Groupe remis à neuf et républié. Les pages reviennent à l'état initial."
+  Write-Host "Groupe remis a neuf et republie. Les pages reviennent a l'etat initial."
 } else {
-  Write-Host "Prêt en local. Pour appliquer en ligne : git push --force origin main dev binome1 binome2"
+  Write-Host "Pret en local. Pour appliquer en ligne : git push --force origin main dev binome1 binome2"
 }
