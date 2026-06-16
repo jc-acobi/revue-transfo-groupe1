@@ -5,6 +5,10 @@ on:
     branches:
       - binome1
 
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,5 +25,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            cd /var/www/workshop/groupe1/binome1
-            git pull origin binome1
+            DIR=/var/www/workshop/groupe1/binome1
+            REPO=https://github.com/${{ github.repository }}.git
+            if [ -d "$DIR/.git" ]; then
+              cd "$DIR"
+              git fetch origin binome1
+              git reset --hard origin/binome1
+            else
+              rm -rf "$DIR"
+              git clone -b binome1 "$REPO" "$DIR"
+            fi

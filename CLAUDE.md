@@ -31,7 +31,7 @@ Quand une décision impactante est prise avec l'utilisateur (changement d'organi
 ## Démarrage de session
 Au début de chaque nouvelle session, avant toute chose, demander :
 « Bonjour ! Vous êtes le binôme 1 ou le binôme 2 ? »
-Mémoriser le binôme (`binome1` ou `binome2`) pour toute la durée de la session, et basculer sur son espace de travail.
+Mémoriser le binôme (`binome1` ou `binome2`) pour toute la durée de la session, basculer sur son espace de travail et y récupérer ses dernières modifications enregistrées (important si le binôme a changé de poste depuis la dernière fois).
 
 ## Démarrer ou continuer une fonctionnalité
 Quand l'utilisateur décrit quelque chose à développer :

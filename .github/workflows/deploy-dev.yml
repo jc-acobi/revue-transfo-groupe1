@@ -5,6 +5,10 @@ on:
     branches:
       - dev
 
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,5 +25,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            cd /var/www/workshop/groupe1/dev
-            git pull origin dev
+            DIR=/var/www/workshop/groupe1/dev
+            REPO=https://github.com/${{ github.repository }}.git
+            if [ -d "$DIR/.git" ]; then
+              cd "$DIR"
+              git fetch origin dev
+              git reset --hard origin/dev
+            else
+              rm -rf "$DIR"
+              git clone -b dev "$REPO" "$DIR"
+            fi
