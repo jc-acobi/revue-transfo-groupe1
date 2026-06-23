@@ -76,13 +76,14 @@ Pour que tout fonctionne en ligne immédiatement, sans installation ni manipulat
 - **À éviter** : tout ce qui exigerait un programme tournant en permanence ou une installation sur le serveur (par exemple Node.js, Python, ou des outils qui compilent le code). Si l'utilisateur demande quelque chose qui irait dans cette direction, le lui expliquer simplement et proposer l'équivalent en PHP ou JavaScript.
 
 ## Utiliser une base de données
-Chaque groupe dispose d'une base de données privée, déjà prête et réservée à ses applications. Elle sert à enregistrer et relire des informations (formulaires, listes, contenus…).
-- Pour s'y connecter, utiliser l'assistant fourni `db.php` : il ouvre la connexion à la base du groupe, sans aucun identifiant à saisir (ils restent sur le serveur). Exemple : `require_once __DIR__ . '/db.php';` puis `$bdd = db();` et `$bdd->query("…")`.
-- Les tables peuvent être créées librement selon les besoins de l'application.
+Chaque groupe dispose d'une base de données privée **par environnement** (binôme 1, binôme 2, intégration, version finale), créée automatiquement. Elle sert à enregistrer et relire des informations (formulaires, listes, contenus…).
+- Pour s'y connecter : `require_once __DIR__ . '/db.php';` puis `$bdd = db();`. Aucun identifiant à saisir (ils restent sur le serveur) ; la base de l'environnement courant est choisie et créée toute seule.
+- **Faire évoluer la structure (migrations)** : pour créer/modifier/supprimer une table ou une colonne, **ajouter un nouveau fichier** dans `migrations/`, nommé avec la date et l'heure (ex. `20260616_1432_creer_messages.sql`) et contenant l'instruction SQL. **Ne jamais modifier un fichier de migration déjà existant** : on en crée toujours un nouveau. Une feature qui touche la base = un fichier (plusieurs instructions SQL possibles).
+- Ces migrations s'appliquent **toutes seules, une seule fois par environnement**, au chargement des pages. La structure « voyage » donc avec le code (binôme → intégration → version finale), chaque base se mettant à jour de son côté ; les données, elles, restent propres à chaque environnement.
 - Garde-fous :
-  - Avant toute opération qui efface ou remplace des données (supprimer une table, vider son contenu…), expliquer clairement ce qui sera perdu et attendre une confirmation explicite.
+  - Avant toute migration destructrice (supprimer une table/colonne, vider des données), expliquer clairement ce qui sera perdu et attendre une confirmation explicite.
   - Ne jamais afficher ni écrire d'identifiant de connexion dans le code ou les pages.
-  - La base est privée au groupe : ne pas chercher à accéder à celle d'un autre groupe.
+  - La base est privée au groupe et à l'environnement : ne pas chercher à accéder à une autre.
 
 ## Personnaliser la fiche du portail
 La façon dont l'application du groupe apparaît sur le portail est décrite dans le fichier `manifest.json` :
