@@ -594,23 +594,22 @@
   <div class="modal">
     <h3>✏️ Modifier le client</h3>
     <input type="hidden" id="edit-cl-id">
-    <div class="form-row">
-      <div class="form-group">
+    <!-- Champ caché pour stocker la valeur du logo -->
+    <input type="hidden" id="edit-cl-logo">
+    <div class="form-row" style="align-items:center;gap:1.5rem">
+      <div class="form-group" style="flex:1">
         <label>Nom du client</label>
         <input type="text" id="edit-cl-nom" placeholder="ex. EDF">
       </div>
-      <div class="form-group" id="edit-cl-logo-group">
-        <label>Logo (URL ou emoji)</label>
-        <input type="text" id="edit-cl-logo" placeholder="ex. 🏭 ou https://…/logo.png" oninput="document.getElementById('edit-cl-logo-preview').innerHTML = logoHtml(this.value, 36, document.getElementById('edit-cl-nom').value); document.getElementById('edit-cl-file-label').style.display='none';">
+      <div class="form-group" style="flex:0;min-width:auto">
+        <label>Logo actuel</label>
+        <div id="edit-cl-logo-preview" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:var(--card-alt);border-radius:10px;overflow:hidden"></div>
       </div>
     </div>
-    <div class="form-row" style="align-items:center;gap:1rem">
-      <button class="btn btn-secondary" type="button" onclick="document.getElementById('edit-cl-logo-file').click()">📁 Importer un fichier logo</button>
-      <input type="file" id="edit-cl-logo-file" accept="image/*" style="display:none" onchange="loadLogoFile(this, 'edit-cl-logo', 'edit-cl-logo-preview', 'edit-cl-file-label', 'edit-cl-logo-group')">
-      <div style="display:flex;align-items:center;gap:0.8rem">
-        <span id="edit-cl-file-label" style="display:none;color:var(--accent);font-size:0.85rem;font-weight:600">✓ Fichier importé</span>
-        <div id="edit-cl-logo-preview" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:var(--card-alt);border-radius:8px;overflow:hidden"></div>
-      </div>
+    <div style="display:flex;align-items:center;gap:1rem;margin-top:0.5rem">
+      <button class="btn btn-secondary" type="button" onclick="document.getElementById('edit-cl-logo-file').click()">📁 Changer le logo</button>
+      <input type="file" id="edit-cl-logo-file" accept="image/*" style="display:none" onchange="loadLogoFile(this, 'edit-cl-logo', 'edit-cl-logo-preview')">
+      <span id="edit-cl-file-label" style="display:none;color:var(--accent);font-size:0.85rem;font-weight:600">✓ Nouveau logo prêt</span>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeEditClientModal()">Annuler</button>
@@ -783,19 +782,21 @@ function logoHtml(logo, size = 40, clientNom = '') {
   return `<span style="font-size:${size * 0.5}px">${logo}</span>`;
 }
 
-function loadLogoFile(input, logoFieldId, previewId, fileLabelId, logoGroupId) {
+function loadLogoFile(input, logoFieldId, previewId) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
     const dataUrl = e.target.result;
+    // Stocker dans le champ caché
     document.getElementById(logoFieldId).value = dataUrl;
-    // Masquer le champ URL, afficher "Fichier importé ✓"
-    if (logoGroupId) document.getElementById(logoGroupId).style.display = 'none';
-    if (fileLabelId) document.getElementById(fileLabelId).style.display = 'inline';
-    // Aperçu
+    // Afficher l'aperçu
     document.getElementById(previewId).innerHTML =
-      `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;padding:2px">`;
+      `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+    // Afficher le label "Nouveau logo prêt"
+    const labelId = logoFieldId.replace('logo', 'file-label').replace('cl-', 'edit-cl-').replace('edit-edit-','edit-');
+    const lbl = document.getElementById(labelId) || document.getElementById('edit-cl-file-label') || document.getElementById('cl-file-label');
+    if (lbl) lbl.style.display = 'inline';
   };
   reader.readAsDataURL(file);
 }
@@ -832,16 +833,14 @@ function openEditClient(id) {
   document.getElementById('edit-cl-id').value   = c.id;
   document.getElementById('edit-cl-nom').value  = c.nom;
   document.getElementById('edit-cl-logo').value = c.logo || '';
-  // Réinitialiser l'affichage
-  document.getElementById('edit-cl-logo-group').style.display = '';
   document.getElementById('edit-cl-file-label').style.display = 'none';
   document.getElementById('edit-cl-logo-file').value = '';
   // Aperçu logo existant
   const prev = document.getElementById('edit-cl-logo-preview');
   if (c.logo) {
-    prev.innerHTML = `<img src="${c.logo}" style="width:100%;height:100%;object-fit:contain;padding:2px" onerror="this.parentElement.innerHTML=initialesHtml('${c.nom.replace(/'/g,"\\'")}',48)">`;
+    prev.innerHTML = `<img src="${c.logo}" style="width:100%;height:100%;object-fit:contain;padding:4px" onerror="this.parentElement.innerHTML=initialesHtml('${c.nom.replace(/'/g,"\\'")}',56)">`;
   } else {
-    prev.innerHTML = initialesHtml(c.nom, 48);
+    prev.innerHTML = initialesHtml(c.nom, 56);
   }
   document.getElementById('modal-edit-client').classList.add('open');
 }
