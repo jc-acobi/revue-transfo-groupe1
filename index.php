@@ -693,6 +693,12 @@
         <input type="date" id="edit-fin">
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Description</label>
+        <textarea id="edit-details" rows="3" placeholder="Description, contexte, objectifs…" style="width:100%;background:var(--card-alt);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;font-family:inherit;font-size:0.9rem;resize:vertical"></textarea>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeEditModal()">Annuler</button>
       <button class="btn btn-primary" onclick="saveEditMission()">Enregistrer</button>
@@ -1151,11 +1157,12 @@ function openEditMission(id) {
   const m = DB.missions.find(x => x.id === id);
   if (!m) return;
 
-  document.getElementById('edit-id').value     = m.id;
-  document.getElementById('edit-titre').value  = m.titre;
-  document.getElementById('edit-statut').value = m.statut;
-  document.getElementById('edit-debut').value  = m.debut || '';
-  document.getElementById('edit-fin').value    = m.fin   || '';
+  document.getElementById('edit-id').value      = m.id;
+  document.getElementById('edit-titre').value   = m.titre;
+  document.getElementById('edit-statut').value  = m.statut;
+  document.getElementById('edit-debut').value   = m.debut   || '';
+  document.getElementById('edit-fin').value     = m.fin     || '';
+  document.getElementById('edit-details').value = m.details || '';
 
   // Remplir le select client
   const editClient = document.getElementById('edit-client');
@@ -1183,12 +1190,13 @@ function saveEditMission() {
   const collabIds = Array.from(document.getElementById('edit-collabs').selectedOptions).map(o => o.value);
   const debut    = document.getElementById('edit-debut').value;
   const fin      = document.getElementById('edit-fin').value;
+  const details  = document.getElementById('edit-details').value.trim();
 
   if (!titre) { toast('Titre de mission requis', 'error'); return; }
 
   const idx = DB.missions.findIndex(x => x.id === id);
   if (idx === -1) return;
-  DB.missions[idx] = { id, titre, statut, clientId, collabIds, debut, fin };
+  DB.missions[idx] = { id, titre, statut, clientId, collabIds, debut, fin, details };
   save();
   closeEditModal();
   renderMissions();
