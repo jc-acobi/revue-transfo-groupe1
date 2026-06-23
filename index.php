@@ -488,7 +488,16 @@
       </div>
       <div class="form-group">
         <label>Logo (URL ou emoji)</label>
-        <input type="text" id="cl-logo" placeholder="ex. 🏭 ou https://…/logo.png">
+        <input type="text" id="cl-logo" placeholder="ex. 🏭 ou https://…/logo.png" oninput="document.getElementById('cl-logo-preview').innerHTML = logoHtml(this.value, 36, document.getElementById('cl-nom').value)">
+      </div>
+      <div class="form-group" style="flex:0;min-width:auto;justify-content:flex-end">
+        <label>Ou importer</label>
+        <button class="btn btn-secondary" type="button" onclick="document.getElementById('cl-logo-file').click()">📁 Fichier</button>
+        <input type="file" id="cl-logo-file" accept="image/*" style="display:none" onchange="loadLogoFile(this, 'cl-logo', 'cl-logo-preview', document.getElementById('cl-nom').value)">
+      </div>
+      <div class="form-group" style="flex:0;min-width:auto;align-items:center;justify-content:flex-end">
+        <label>Aperçu</label>
+        <div id="cl-logo-preview" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center"></div>
       </div>
     </div>
     <button class="btn btn-primary" onclick="addClient()">Ajouter</button>
@@ -592,7 +601,14 @@
       </div>
       <div class="form-group">
         <label>Logo (URL ou emoji)</label>
-        <input type="text" id="edit-cl-logo" placeholder="ex. 🏭 ou https://…/logo.png">
+        <input type="text" id="edit-cl-logo" placeholder="ex. 🏭 ou https://…/logo.png" oninput="document.getElementById('edit-cl-logo-preview').innerHTML = logoHtml(this.value, 36, document.getElementById('edit-cl-nom').value)">
+      </div>
+    </div>
+    <div class="form-row" style="align-items:center;gap:1rem">
+      <button class="btn btn-secondary" type="button" onclick="document.getElementById('edit-cl-logo-file').click()">📁 Importer un fichier logo</button>
+      <input type="file" id="edit-cl-logo-file" accept="image/*" style="display:none" onchange="loadLogoFile(this, 'edit-cl-logo', 'edit-cl-logo-preview', document.getElementById('edit-cl-nom').value)">
+      <div style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.85rem">
+        Aperçu : <div id="edit-cl-logo-preview" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center"></div>
       </div>
     </div>
     <div class="modal-actions">
@@ -766,6 +782,18 @@ function logoHtml(logo, size = 40, clientNom = '') {
   return `<span style="font-size:${size * 0.5}px">${logo}</span>`;
 }
 
+function loadLogoFile(input, logoFieldId, previewId, clientNom) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    document.getElementById(logoFieldId).value = dataUrl;
+    document.getElementById(previewId).innerHTML = logoHtml(dataUrl, 36, clientNom);
+  };
+  reader.readAsDataURL(file);
+}
+
 function initialesHtml(nom, size = 40) {
   const initiales = (nom || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:8px;background:var(--card-alt);color:var(--accent);font-weight:700;font-size:${size * 0.35}px">${initiales}</span>`;
@@ -798,6 +826,8 @@ function openEditClient(id) {
   document.getElementById('edit-cl-id').value   = c.id;
   document.getElementById('edit-cl-nom').value  = c.nom;
   document.getElementById('edit-cl-logo').value = c.logo || '';
+  document.getElementById('edit-cl-logo-preview').innerHTML = logoHtml(c.logo || '', 36, c.nom);
+  document.getElementById('edit-cl-logo-file').value = '';
   document.getElementById('modal-edit-client').classList.add('open');
 }
 
