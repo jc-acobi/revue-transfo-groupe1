@@ -454,26 +454,50 @@
   <!-- COLLABORATEURS -->
   <div class="section-title">👤 Collaborateurs</div>
   <div class="form-card">
-    <h3>Ajouter un collaborateur</h3>
+    <h3 id="c-form-title">Ajouter un collaborateur</h3>
+    <input type="hidden" id="c-edit-id">
     <div class="form-row">
-      <div class="form-group">
-        <label>Prénom</label>
-        <input type="text" id="c-prenom" placeholder="ex. Marie">
-      </div>
       <div class="form-group">
         <label>Nom</label>
         <input type="text" id="c-nom" placeholder="ex. Dupont">
       </div>
       <div class="form-group">
-        <label>Rôle / Poste</label>
-        <input type="text" id="c-role" placeholder="ex. Consultante">
+        <label>Prénom</label>
+        <input type="text" id="c-prenom" placeholder="ex. Marie">
+      </div>
+      <div class="form-group">
+        <label>Sexe</label>
+        <select id="c-sexe">
+          <option value="">-- Sélectionner --</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+        </select>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="addCollaborateur()">Ajouter</button>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date d'entrée</label>
+        <input type="date" id="c-date-entree">
+      </div>
+      <div class="form-group">
+        <label>Date de sortie</label>
+        <input type="date" id="c-date-sortie">
+      </div>
+      <div class="form-group">
+        <label>Co-pilote</label>
+        <select id="c-copilote">
+          <option value="">-- Aucun --</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.75rem">
+      <button class="btn btn-primary" id="c-submit-btn" onclick="saveCollaborateur()">Ajouter</button>
+      <button class="btn" id="c-cancel-btn" style="display:none;background:var(--card-alt);color:var(--text)" onclick="cancelEditCollaborateur()">Annuler</button>
+    </div>
   </div>
 
   <table class="data-table" id="table-collabs">
-    <thead><tr><th>Prénom Nom</th><th>Rôle</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Nom Prénom</th><th>Sexe</th><th>Date entrée</th><th>Date sortie</th><th>Co-pilote</th><th>Actions</th></tr></thead>
     <tbody></tbody>
   </table>
 
@@ -649,19 +673,72 @@ document.getElementById('modal-confirm-btn').onclick = () => {
 // ══════════════════════════════════════════
 //  COLLABORATEURS
 // ══════════════════════════════════════════
-function addCollaborateur() {
-  const prenom = document.getElementById('c-prenom').value.trim();
-  const nom    = document.getElementById('c-nom').value.trim();
-  const role   = document.getElementById('c-role').value.trim();
-  if (!prenom || !nom) { toast('Prénom et nom requis', 'error'); return; }
-  DB.collaborateurs.push({ id: uid(), prenom, nom, role });
+function saveCollaborateur() {
+  const editId = document.getElementById('c-edit-id').value;
+  const nom         = document.getElementById('c-nom').value.trim();
+  const prenom      = document.getElementById('c-prenom').value.trim();
+  const sexe        = document.getElementById('c-sexe').value;
+  const dateEntree  = document.getElementById('c-date-entree').value;
+  const dateSortie  = document.getElementById('c-date-sortie').value;
+  const copilote    = document.getElementById('c-copilote').value;
+  if (!nom || !prenom) { toast('Nom et prénom requis', 'error'); return; }
+  if (editId) {
+    const c = DB.collaborateurs.find(x => x.id === editId);
+    Object.assign(c, { nom, prenom, sexe, dateEntree, dateSortie, copilote });
+    toast('Collaborateur modifié ✓');
+  } else {
+    DB.collaborateurs.push({ id: uid(), nom, prenom, sexe, dateEntree, dateSortie, copilote });
+    toast('Collaborateur ajouté ✓');
+  }
   save();
-  document.getElementById('c-prenom').value = '';
-  document.getElementById('c-nom').value = '';
-  document.getElementById('c-role').value = '';
+  resetCollaborateurForm();
   renderCollaborateurs();
   refreshSelects();
-  toast('Collaborateur ajouté ✓');
+}
+
+function resetCollaborateurForm() {
+  document.getElementById('c-edit-id').value = '';
+  document.getElementById('c-nom').value = '';
+  document.getElementById('c-prenom').value = '';
+  document.getElementById('c-sexe').value = '';
+  document.getElementById('c-date-entree').value = '';
+  document.getElementById('c-date-sortie').value = '';
+  document.getElementById('c-copilote').value = '';
+  document.getElementById('c-form-title').textContent = 'Ajouter un collaborateur';
+  document.getElementById('c-submit-btn').textContent = 'Ajouter';
+  document.getElementById('c-cancel-btn').style.display = 'none';
+}
+
+function editCollaborateur(id) {
+  const c = DB.collaborateurs.find(x => x.id === id);
+  refreshCopiloteSelect(id);
+  document.getElementById('c-edit-id').value = id;
+  document.getElementById('c-nom').value = c.nom;
+  document.getElementById('c-prenom').value = c.prenom;
+  document.getElementById('c-sexe').value = c.sexe || '';
+  document.getElementById('c-date-entree').value = c.dateEntree || '';
+  document.getElementById('c-date-sortie').value = c.dateSortie || '';
+  document.getElementById('c-copilote').value = c.copilote || '';
+  document.getElementById('c-form-title').textContent = `Modifier ${c.prenom} ${c.nom}`;
+  document.getElementById('c-submit-btn').textContent = 'Enregistrer';
+  document.getElementById('c-cancel-btn').style.display = 'inline-block';
+  document.getElementById('c-form-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditCollaborateur() {
+  resetCollaborateurForm();
+  refreshCopiloteSelect(null);
+}
+
+function refreshCopiloteSelect(excludeId) {
+  const sel = document.getElementById('c-copilote');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- Aucun --</option>' +
+    DB.collaborateurs
+      .filter(c => c.id !== excludeId)
+      .map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`)
+      .join('');
+  sel.value = prev;
 }
 
 function deleteCollaborateur(id) {
@@ -676,16 +753,26 @@ function deleteCollaborateur(id) {
 function renderCollaborateurs() {
   const tbody = document.querySelector('#table-collabs tbody');
   if (!DB.collaborateurs.length) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun collaborateur</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun collaborateur</td></tr>';
     return;
   }
-  tbody.innerHTML = DB.collaborateurs.map(c => `
+  tbody.innerHTML = DB.collaborateurs.map(c => {
+    const copilote = c.copilote ? DB.collaborateurs.find(x => x.id === c.copilote) : null;
+    const copiloteLabel = copilote ? `${copilote.prenom} ${copilote.nom}` : '—';
+    const fmt = d => d ? d.split('-').reverse().join('/') : '—';
+    return `
     <tr>
-      <td>${c.prenom} ${c.nom}</td>
-      <td style="color:var(--text-muted)">${c.role || '—'}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteCollaborateur('${c.id}')">Supprimer</button></td>
-    </tr>
-  `).join('');
+      <td>${c.nom} ${c.prenom}</td>
+      <td style="color:var(--text-muted)">${c.sexe || '—'}</td>
+      <td style="color:var(--text-muted)">${fmt(c.dateEntree)}</td>
+      <td style="color:var(--text-muted)">${fmt(c.dateSortie)}</td>
+      <td style="color:var(--text-muted)">${copiloteLabel}</td>
+      <td style="display:flex;gap:0.5rem">
+        <button class="btn btn-primary btn-sm" onclick="editCollaborateur('${c.id}')">Modifier</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCollaborateur('${c.id}')">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════
@@ -753,6 +840,10 @@ function refreshSelects() {
   mCollabs.innerHTML = DB.collaborateurs.map(c =>
     `<option value="${c.id}" ${prevSel.includes(c.id) ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`
   ).join('');
+
+  // Select co-pilote (formulaire collaborateur)
+  const editId = document.getElementById('c-edit-id').value;
+  refreshCopiloteSelect(editId || null);
 
   // Filtres visualisation
   const fClient = document.getElementById('f-client');
