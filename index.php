@@ -567,7 +567,7 @@
   </div>
 
   <table class="data-table" id="table-collabs" style="width:100%">
-    <thead><tr><th>Nom Prénom</th><th>Sexe</th><th>Date entrée</th><th>Date sortie</th><th>Co-pilote</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Prénom Nom</th><th>Sexe</th><th>Date entrée</th><th>Date sortie</th><th>Co-pilote</th><th>Actions</th></tr></thead>
   </table>
   <div style="max-height:296px;overflow-y:auto;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px">
     <table class="data-table" style="width:100%"><tbody id="tbody-collabs"></tbody></table>
@@ -659,7 +659,7 @@
   </div>
 
   <table class="data-table" id="table-missions">
-    <thead><tr><th>Mission</th><th>Client</th><th>Collaborateurs</th><th>Période</th><th>Statut</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Mission</th><th>Client</th><th>Collaborateurs</th><th>Période</th><th>Statut</th><th style="min-width:140px">Actions</th></tr></thead>
     <tbody></tbody>
   </table>
 
@@ -1323,13 +1323,16 @@ function renderMissions() {
     const badgeCls = statut === 'en_cours' ? 'badge-encours' : 'badge-terminee';
     const badgeLbl = statut === 'en_cours' ? 'En cours' : 'Terminée';
     return `
-      <tr onclick="openEditMission('${m.id}')" style="cursor:pointer" title="Cliquer pour modifier">
-        <td>${m.titre}</td>
+      <tr>
+        <td>${m.titre || '—'}</td>
         <td>${client ? client.nom : '—'}</td>
         <td style="color:var(--text-muted)">${collabs || '—'}</td>
         <td style="color:var(--text-muted);font-size:0.82rem">${periode}</td>
         <td><span class="badge ${badgeCls}">${badgeLbl}</span></td>
-        <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMission('${m.id}')">Supprimer</button></td>
+        <td style="display:flex;gap:0.5rem">
+          <button class="btn btn-primary btn-sm" onclick="openEditMission('${m.id}')">Modifier</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMission('${m.id}')">Supprimer</button>
+        </td>
       </tr>`;
   }).join('');
 }
@@ -1465,10 +1468,9 @@ function importMissions(input) {
         const details    = (row['Détails de la mission'] || row['Détails Missions'] || '').toString().trim();
         const lineNum    = i + 2;
 
-        if (!titre)     { skipped.push(`Ligne ${lineNum} : titre manquant`); return; }
-        if (!clientNom) { skipped.push(`Ligne ${lineNum} (${titre}) : client manquant`); return; }
-        if (!collabStr) { skipped.push(`Ligne ${lineNum} (${titre}) : collaborateur manquant`); return; }
-        if (!debut)     { skipped.push(`Ligne ${lineNum} (${titre}) : date de début manquante`); return; }
+        if (!clientNom) { skipped.push(`Ligne ${lineNum} (${titre || '—'}) : client manquant`); return; }
+        if (!collabStr) { skipped.push(`Ligne ${lineNum} (${titre || '—'}) : collaborateur manquant`); return; }
+        if (!debut)     { skipped.push(`Ligne ${lineNum} (${titre || '—'}) : date de début manquante`); return; }
 
         // Collaborateur : doit exister
         const collab = DB.collaborateurs.find(c => (c.nom + ' ' + c.prenom).toLowerCase() === collabStr.toLowerCase()
