@@ -746,6 +746,7 @@ function refreshCopiloteSelect(excludeId) {
   sel.innerHTML = '<option value="">-- Aucun --</option>' +
     DB.collaborateurs
       .filter(c => c.id !== excludeId)
+      .filter(c => !c.dateSortie || c.dateSortie >= new Date().toISOString().split('T')[0])
       .sort((a, b) => a.prenom.localeCompare(b.prenom, 'fr'))
       .map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`)
       .join('');
