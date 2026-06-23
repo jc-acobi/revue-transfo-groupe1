@@ -1,11 +1,18 @@
 <?php
+require_once __DIR__ . '/migrate.php';
+
 /**
- * Connexion à la base de données du groupe.
+ * Connexion à la base de données de l'environnement courant.
  *
- * Les identifiants ne sont PAS ici : ils sont lus depuis un fichier de
- * configuration présent uniquement sur le serveur (/var/www/config/db.php),
- * jamais versionné. Le nom de la base est déduit automatiquement du dossier
- * (groupe1, groupe2, …), de sorte que chaque groupe parle à sa propre base.
+ * - Les identifiants viennent d'un fichier serveur (/var/www/config/db.php),
+ *   jamais du dépôt.
+ * - La base dépend de l'environnement, déduit du chemin :
+ *     /var/www/apps/groupeN              -> groupeN_prod
+ *     /var/www/workshop/groupeN/dev      -> groupeN_dev
+ *     /var/www/workshop/groupeN/binome1  -> groupeN_binome1
+ *     /var/www/workshop/groupeN/binome2  -> groupeN_binome2
+ *   Elle est créée automatiquement si elle n'existe pas encore.
+ * - Les migrations en attente (dossier migrations/) sont appliquées automatiquement.
  *
  * Utilisation dans une page :
  *   require_once __DIR__ . '/db.php';
@@ -25,13 +32,22 @@ function db(): PDO
     }
     $cfg = require $configPath;
 
-    if (!preg_match('/groupe\d+/', __DIR__, $m)) {
-        throw new RuntimeException("Impossible de déterminer la base du groupe.");
+    if (!preg_match('/groupe\d+/', __DIR__, $g)) {
+        throw new RuntimeException("Impossible de déterminer le groupe.");
     }
-    $schema = $m[0];
+    $groupe = $g[0];
+
+    if (preg_match('#[\\\\/]apps[\\\\/]#', __DIR__)) {
+        $env = 'prod';
+    } elseif (preg_match('#[\\\\/](binome1|binome2|dev)[\\\\/]?$#', __DIR__, $e)) {
+        $env = $e[1];
+    } else {
+        $env = 'dev';
+    }
+    $schema = $groupe . '_' . $env;
 
     $pdo = new PDO(
-        "mysql:host={$cfg['host']};dbname={$schema};charset=utf8mb4",
+        "mysql:host={$cfg['host']};charset=utf8mb4",
         $cfg['user'],
         $cfg['pass'],
         [
@@ -39,6 +55,13 @@ function db(): PDO
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]
     );
+
+    // Crée la base de l'environnement si besoin, puis s'y place.
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$schema}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    $pdo->exec("USE `{$schema}`");
+
+    // Applique les migrations en attente sur cette base.
+    migrate($pdo, __DIR__ . '/migrations');
 
     return $pdo;
 }
