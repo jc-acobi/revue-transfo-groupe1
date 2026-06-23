@@ -4,10 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Missions ACOBI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 300 700; font-display: swap;
+      src: url('fonts/nunito-latin-ext.woff2') format('woff2');
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+    @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 300 700; font-display: swap;
+      src: url('fonts/nunito-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  </style>
   <!-- SheetJS pour lire les fichiers Excel -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -454,26 +460,54 @@
   <!-- COLLABORATEURS -->
   <div class="section-title">👤 Collaborateurs</div>
   <div class="form-card">
-    <h3>Ajouter un collaborateur</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
+      <h3 id="c-form-title">Ajouter un collaborateur</h3>
+      <button class="btn" style="background:var(--card-alt);color:var(--accent);border:1px solid var(--accent);font-size:0.85rem" onclick="document.getElementById('c-import-input').click()">📥 Import en masse</button>
+      <input type="file" id="c-import-input" accept=".xlsx,.xls" style="display:none" onchange="importCollaborateurs(this)">
+    </div>
+    <input type="hidden" id="c-edit-id">
     <div class="form-row">
-      <div class="form-group">
-        <label>Prénom</label>
-        <input type="text" id="c-prenom" placeholder="ex. Marie">
-      </div>
       <div class="form-group">
         <label>Nom</label>
         <input type="text" id="c-nom" placeholder="ex. Dupont">
       </div>
       <div class="form-group">
-        <label>Rôle / Poste</label>
-        <input type="text" id="c-role" placeholder="ex. Consultante">
+        <label>Prénom</label>
+        <input type="text" id="c-prenom" placeholder="ex. Marie">
+      </div>
+      <div class="form-group">
+        <label>Sexe</label>
+        <select id="c-sexe">
+          <option value="">-- Sélectionner --</option>
+          <option value="Masculin">Masculin</option>
+          <option value="Féminin">Féminin</option>
+        </select>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="addCollaborateur()">Ajouter</button>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date d'entrée</label>
+        <input type="date" id="c-date-entree">
+      </div>
+      <div class="form-group">
+        <label>Date de sortie</label>
+        <input type="date" id="c-date-sortie">
+      </div>
+      <div class="form-group">
+        <label>Co-pilote</label>
+        <select id="c-copilote">
+          <option value="">-- Aucun --</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.75rem">
+      <button class="btn btn-primary" id="c-submit-btn" onclick="saveCollaborateur()">Ajouter</button>
+      <button class="btn" id="c-cancel-btn" style="display:none;background:var(--card-alt);color:var(--text)" onclick="cancelEditCollaborateur()">Annuler</button>
+    </div>
   </div>
 
   <table class="data-table" id="table-collabs">
-    <thead><tr><th>Prénom Nom</th><th>Rôle</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Nom Prénom</th><th>Sexe</th><th>Date entrée</th><th>Date sortie</th><th>Co-pilote</th><th>Actions</th></tr></thead>
     <tbody></tbody>
   </table>
 
@@ -515,7 +549,7 @@
   <div class="form-card">
     <h3>📥 Importer depuis Excel</h3>
     <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">
-      Colonnes attendues : <strong>Titre</strong>, <strong>Client</strong>, <strong>Collaborateurs</strong> (séparés par « ; »), <strong>Date début</strong>, <strong>Date fin</strong>, <strong>Statut</strong> (en_cours / terminee)
+      Colonnes attendues : <strong>Nom</strong>, <strong>Prénom</strong>, <strong>Client</strong>, <strong>Titre Mission</strong>, <strong>Date Début</strong>, <strong>Date Fin</strong>, <strong>Détails Missions</strong>
     </p>
     <div class="import-zone" id="drop-zone" onclick="document.getElementById('excel-input').click()"
          ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -562,6 +596,12 @@
       <div class="form-group">
         <label>Date de fin</label>
         <input type="date" id="m-fin">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Détails de la mission</label>
+        <textarea id="m-details" rows="3" placeholder="Description, contexte, objectifs…" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;font-family:inherit;font-size:0.95rem;resize:vertical"></textarea>
       </div>
     </div>
     <button class="btn btn-primary" onclick="addMission()">Ajouter la mission</button>
@@ -732,19 +772,74 @@ document.getElementById('modal-confirm-btn').onclick = () => {
 // ══════════════════════════════════════════
 //  COLLABORATEURS
 // ══════════════════════════════════════════
-function addCollaborateur() {
-  const prenom = document.getElementById('c-prenom').value.trim();
-  const nom    = document.getElementById('c-nom').value.trim();
-  const role   = document.getElementById('c-role').value.trim();
-  if (!prenom || !nom) { toast('Prénom et nom requis', 'error'); return; }
-  DB.collaborateurs.push({ id: uid(), prenom, nom, role });
+function saveCollaborateur() {
+  const editId = document.getElementById('c-edit-id').value;
+  const nom         = document.getElementById('c-nom').value.trim();
+  const prenom      = document.getElementById('c-prenom').value.trim();
+  const sexe        = document.getElementById('c-sexe').value;
+  const dateEntree  = document.getElementById('c-date-entree').value;
+  const dateSortie  = document.getElementById('c-date-sortie').value;
+  const copilote    = document.getElementById('c-copilote').value;
+  if (!nom || !prenom) { toast('Nom et prénom requis', 'error'); return; }
+  if (editId) {
+    const c = DB.collaborateurs.find(x => x.id === editId);
+    Object.assign(c, { nom, prenom, sexe, dateEntree, dateSortie, copilote });
+    toast('Collaborateur modifié ✓');
+  } else {
+    DB.collaborateurs.push({ id: uid(), nom, prenom, sexe, dateEntree, dateSortie, copilote });
+    toast('Collaborateur ajouté ✓');
+  }
   save();
-  document.getElementById('c-prenom').value = '';
-  document.getElementById('c-nom').value = '';
-  document.getElementById('c-role').value = '';
+  resetCollaborateurForm();
   renderCollaborateurs();
   refreshSelects();
-  toast('Collaborateur ajouté ✓');
+}
+
+function resetCollaborateurForm() {
+  document.getElementById('c-edit-id').value = '';
+  document.getElementById('c-nom').value = '';
+  document.getElementById('c-prenom').value = '';
+  document.getElementById('c-sexe').value = '';
+  document.getElementById('c-date-entree').value = '';
+  document.getElementById('c-date-sortie').value = '';
+  document.getElementById('c-copilote').value = '';
+  document.getElementById('c-form-title').textContent = 'Ajouter un collaborateur';
+  document.getElementById('c-submit-btn').textContent = 'Ajouter';
+  document.getElementById('c-cancel-btn').style.display = 'none';
+}
+
+function editCollaborateur(id) {
+  const c = DB.collaborateurs.find(x => x.id === id);
+  refreshCopiloteSelect(id);
+  document.getElementById('c-edit-id').value = id;
+  document.getElementById('c-nom').value = c.nom;
+  document.getElementById('c-prenom').value = c.prenom;
+  document.getElementById('c-sexe').value = c.sexe || '';
+  document.getElementById('c-date-entree').value = c.dateEntree || '';
+  document.getElementById('c-date-sortie').value = c.dateSortie || '';
+  document.getElementById('c-copilote').value = c.copilote || '';
+  document.getElementById('c-form-title').textContent = `Modifier ${c.prenom} ${c.nom}`;
+  document.getElementById('c-submit-btn').textContent = 'Enregistrer';
+  document.getElementById('c-cancel-btn').style.display = 'inline-block';
+  document.getElementById('c-form-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditCollaborateur() {
+  resetCollaborateurForm();
+  refreshCopiloteSelect(null);
+}
+
+function refreshCopiloteSelect(excludeId) {
+  const sel = document.getElementById('c-copilote');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- Aucun --</option>' +
+    DB.collaborateurs
+      .filter(c => c.id !== excludeId)
+      .filter(c => !c.dateSortie || c.dateSortie >= new Date().toISOString().split('T')[0])
+      .sort((a, b) => a.prenom.localeCompare(b.prenom, 'fr'))
+      .map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`)
+      .join('');
+  sel.value = prev;
 }
 
 function deleteCollaborateur(id) {
@@ -759,16 +854,104 @@ function deleteCollaborateur(id) {
 function renderCollaborateurs() {
   const tbody = document.querySelector('#table-collabs tbody');
   if (!DB.collaborateurs.length) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun collaborateur</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun collaborateur</td></tr>';
     return;
   }
-  tbody.innerHTML = DB.collaborateurs.map(c => `
+  tbody.innerHTML = DB.collaborateurs.map(c => {
+    const copilote = c.copilote ? DB.collaborateurs.find(x => x.id === c.copilote) : null;
+    const copiloteLabel = copilote ? `${copilote.prenom} ${copilote.nom}` : '—';
+    const fmt = d => d ? d.split('-').reverse().join('/') : '—';
+    return `
     <tr>
-      <td>${c.prenom} ${c.nom}</td>
-      <td style="color:var(--text-muted)">${c.role || '—'}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteCollaborateur('${c.id}')">Supprimer</button></td>
-    </tr>
-  `).join('');
+      <td>${c.nom} ${c.prenom}</td>
+      <td style="color:var(--text-muted)">${c.sexe || '—'}</td>
+      <td style="color:var(--text-muted)">${fmt(c.dateEntree)}</td>
+      <td style="color:var(--text-muted)">${fmt(c.dateSortie)}</td>
+      <td style="color:var(--text-muted)">${copiloteLabel}</td>
+      <td style="display:flex;gap:0.5rem">
+        <button class="btn btn-primary btn-sm" onclick="editCollaborateur('${c.id}')">Modifier</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCollaborateur('${c.id}')">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function importCollaborateurs(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets['Feuil1'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { toast('Onglet "Feuil1" introuvable dans le fichier', 'error'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+      if (!rows.length) { toast('Fichier vide ou non reconnu', 'error'); return; }
+
+      // Première passe : créer tous les collaborateurs sans co-pilote
+      const newIds = {};
+      let added = 0;
+      rows.forEach(row => {
+        const nom    = (row['Nom']    || '').toString().trim();
+        const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
+        if (!nom || !prenom) return;
+        const sexe       = (row['Sexe'] || '').toString().trim();
+        const dateEntree = excelDateToISO(row['Entrée'] || row['Entree'] || row['Date entrée'] || '');
+        const dateSortie = excelDateToISO(row['Sortie'] || row['Date sortie'] || '');
+        const key = (prenom + ' ' + nom).toLowerCase();
+        const existing = DB.collaborateurs.find(c => (c.prenom + ' ' + c.nom).toLowerCase() === key);
+        if (existing) {
+          Object.assign(existing, { sexe, dateEntree, dateSortie });
+          newIds[key] = existing.id;
+        } else {
+          const id = uid();
+          DB.collaborateurs.push({ id, nom, prenom, sexe, dateEntree, dateSortie, copilote: '' });
+          newIds[key] = id;
+          added++;
+        }
+      });
+
+      // Deuxième passe : associer les co-pilotes
+      rows.forEach(row => {
+        const nom    = (row['Nom']    || '').toString().trim();
+        const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
+        if (!nom || !prenom) return;
+        const copiloteStr = (row['Co-pilote'] || row['Copilote'] || '').toString().trim();
+        if (!copiloteStr || copiloteStr.toLowerCase() === 'n/a') return;
+        const key = (prenom + ' ' + nom).toLowerCase();
+        const collab = DB.collaborateurs.find(c => c.id === newIds[key]);
+        if (!collab) return;
+        const coKey = copiloteStr.toLowerCase();
+        const co = DB.collaborateurs.find(c => (c.prenom + ' ' + c.nom).toLowerCase() === coKey);
+        if (co) collab.copilote = co.id;
+      });
+
+      save();
+      renderCollaborateurs();
+      refreshSelects();
+      toast(`${added} collaborateur(s) importé(s) ✓`);
+    } catch(err) {
+      toast('Erreur : ' + err.message, 'error');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function excelDateToISO(val) {
+  if (!val && val !== 0) return '';
+  const s = val.toString().trim();
+  if (!s) return '';
+  // Format DD/MM/YYYY ou DD/MM/YY
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    const y = m[3].length === 2 ? '20' + m[3] : m[3];
+    return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  }
+  // Format YYYY-MM-DD déjà correct
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return '';
 }
 
 // ══════════════════════════════════════════
@@ -907,6 +1090,10 @@ function refreshSelects() {
     `<option value="${c.id}" ${prevSel.includes(c.id) ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`
   ).join('');
 
+  // Select co-pilote (formulaire collaborateur)
+  const editId = document.getElementById('c-edit-id').value;
+  refreshCopiloteSelect(editId || null);
+
   // Filtres visualisation
   const fClient = document.getElementById('f-client');
   const fClient2 = fClient.value;
@@ -925,20 +1112,21 @@ function refreshSelects() {
 //  MISSIONS
 // ══════════════════════════════════════════
 function addMission(data = null) {
-  let titre, clientId, collabIds, debut, fin, statut;
+  let titre, clientId, collabIds, debut, fin, statut, details;
   if (data) {
-    ({ titre, clientId, collabIds, debut, fin, statut } = data);
+    ({ titre, clientId, collabIds, debut, fin, statut, details } = data);
   } else {
-    titre    = document.getElementById('m-titre').value.trim();
-    clientId = document.getElementById('m-client').value;
+    titre     = document.getElementById('m-titre').value.trim();
+    clientId  = document.getElementById('m-client').value;
     collabIds = Array.from(document.getElementById('m-collabs').selectedOptions).map(o => o.value);
-    debut    = document.getElementById('m-debut').value;
-    fin      = document.getElementById('m-fin').value;
-    statut   = document.getElementById('m-statut').value;
+    debut     = document.getElementById('m-debut').value;
+    fin       = document.getElementById('m-fin').value;
+    statut    = document.getElementById('m-statut').value;
+    details   = document.getElementById('m-details').value.trim();
   }
   if (!titre) { toast('Titre de mission requis', 'error'); return; }
 
-  DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, statut: statut || 'en_cours' });
+  DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, details: details || '', statut: statut || 'en_cours' });
   save();
 
   if (!data) {
@@ -947,6 +1135,7 @@ function addMission(data = null) {
     document.getElementById('m-debut').value = '';
     document.getElementById('m-fin').value = '';
     document.getElementById('m-statut').value = 'en_cours';
+    document.getElementById('m-details').value = '';
     Array.from(document.getElementById('m-collabs').options).forEach(o => o.selected = false);
   }
   renderMissions();
@@ -1125,44 +1314,45 @@ function handleExcelFile(file) {
   reader.onload = function(e) {
     try {
       const wb   = XLSX.read(e.target.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const ws   = wb.Sheets['Feuil1'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { toast('Onglet "Feuil1" introuvable', 'error'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+
+      // Regrouper les lignes par mission (Titre Mission + Client + Date Début + Date Fin)
+      const missionsMap = {};
+      rows.forEach(row => {
+        const titre = (row['Titre Mission'] || '').toString().trim();
+        if (!titre) return;
+        const clientNom = (row['Client'] || '').toString().trim();
+        const debut     = excelDateToISO(row['Date Début'] || row['Date Debut'] || '');
+        const fin       = excelDateToISO(row['Date Fin']   || '');
+        const details   = (row['Détails Missions'] || row['Details Missions'] || '').toString().trim();
+        const nom       = (row['Nom']    || '').toString().trim();
+        const prenom    = (row['Prénom'] || row['Prenom'] || '').toString().trim();
+
+        const key = [titre, clientNom, debut, fin].join('|');
+        if (!missionsMap[key]) {
+          missionsMap[key] = { titre, clientNom, debut, fin, details, collabIds: [] };
+        }
+
+        if (nom || prenom) {
+          const fullName = (prenom + ' ' + nom).trim().toLowerCase();
+          let c = DB.collaborateurs.find(x => (x.prenom + ' ' + x.nom).toLowerCase() === fullName);
+          if (!c) { c = { id: uid(), nom, prenom, sexe: '', dateEntree: '', dateSortie: '', copilote: '' }; DB.collaborateurs.push(c); }
+          if (!missionsMap[key].collabIds.includes(c.id)) missionsMap[key].collabIds.push(c.id);
+        }
+      });
 
       let added = 0;
-      rows.forEach(row => {
-        const titre  = (row['Titre'] || row['titre'] || '').toString().trim();
-        if (!titre) return;
-
-        const clientNom = (row['Client'] || row['client'] || '').toString().trim();
-        const statut    = (row['Statut'] || row['statut'] || 'en_cours').toString().trim();
-        const debut     = excelDateToString(row['Date début'] || row['Date debut'] || row['date_debut'] || '');
-        const fin       = excelDateToString(row['Date fin']   || row['Date fin']   || row['date_fin']   || '');
-        const collabStr = (row['Collaborateurs'] || row['collaborateurs'] || '').toString().trim();
-
-        // Créer le client s'il n'existe pas
+      Object.values(missionsMap).forEach(({ titre, clientNom, debut, fin, details, collabIds }) => {
         let clientId = '';
         if (clientNom) {
           let c = DB.clients.find(x => x.nom.toLowerCase() === clientNom.toLowerCase());
           if (!c) { c = { id: uid(), nom: clientNom, logo: '' }; DB.clients.push(c); }
           clientId = c.id;
         }
-
-        // Créer les collaborateurs s'ils n'existent pas
-        const collabIds = [];
-        if (collabStr) {
-          collabStr.split(';').map(s => s.trim()).filter(Boolean).forEach(name => {
-            const parts  = name.split(' ');
-            const prenom = parts[0] || '';
-            const nom    = parts.slice(1).join(' ') || '';
-            let c = DB.collaborateurs.find(x =>
-              (x.prenom + ' ' + x.nom).toLowerCase() === name.toLowerCase()
-            );
-            if (!c) { c = { id: uid(), prenom, nom, role: '' }; DB.collaborateurs.push(c); }
-            collabIds.push(c.id);
-          });
-        }
-
-        DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, statut });
+        const statut = (fin && fin < new Date().toISOString().split('T')[0]) ? 'terminee' : 'en_cours';
+        DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, details, statut });
         added++;
       });
 
@@ -1170,7 +1360,7 @@ function handleExcelFile(file) {
       renderAll();
       toast(`${added} mission(s) importée(s) ✓`);
     } catch(err) {
-      toast('Erreur lors de la lecture du fichier', 'error');
+      toast('Erreur : ' + err.message, 'error');
       console.error(err);
     }
   };
