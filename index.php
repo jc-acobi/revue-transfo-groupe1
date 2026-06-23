@@ -1455,6 +1455,7 @@ function importMissions(input) {
       if (!ws) { toast('Onglet "Feuil1" introuvable', 'error'); return; }
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
       if (!rows.length) { toast('Fichier vide', 'error'); return; }
+      console.log('Première ligne missions :', JSON.stringify(rows[0]));
 
       let created = 0, updated = 0;
       const skipped = [];
