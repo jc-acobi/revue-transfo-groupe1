@@ -791,6 +791,7 @@ function importCollaborateurs(input) {
       if (!ws) { toast('Onglet "Feuil1" introuvable dans le fichier', 'error'); return; }
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
       if (!rows.length) { toast('Fichier vide ou non reconnu', 'error'); return; }
+      console.log('Première ligne lue :', JSON.stringify(rows[0]));
 
       // Première passe : créer tous les collaborateurs sans co-pilote
       const newIds = {};
