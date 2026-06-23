@@ -515,24 +515,21 @@
   <div class="section-title" style="margin-top:2.5rem">🏢 Clients</div>
   <div class="form-card">
     <h3>Ajouter un client</h3>
-    <div class="form-row">
-      <div class="form-group">
+    <input type="hidden" id="cl-logo">
+    <div class="form-row" style="align-items:center;gap:1.5rem">
+      <div class="form-group" style="flex:1">
         <label>Nom du client</label>
         <input type="text" id="cl-nom" placeholder="ex. EDF">
       </div>
-      <div class="form-group">
-        <label>Logo (URL ou emoji)</label>
-        <input type="text" id="cl-logo" placeholder="ex. 🏭 ou https://…/logo.png" oninput="document.getElementById('cl-logo-preview').innerHTML = logoHtml(this.value, 36, document.getElementById('cl-nom').value)">
+      <div class="form-group" style="flex:0;min-width:auto">
+        <label>Logo</label>
+        <div id="cl-logo-preview" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:var(--card-alt);border-radius:10px;overflow:hidden"></div>
       </div>
-      <div class="form-group" style="flex:0;min-width:auto;justify-content:flex-end">
-        <label>Ou importer</label>
-        <button class="btn btn-secondary" type="button" onclick="document.getElementById('cl-logo-file').click()">📁 Fichier</button>
-        <input type="file" id="cl-logo-file" accept="image/*" style="display:none" onchange="loadLogoFile(this, 'cl-logo', 'cl-logo-preview', document.getElementById('cl-nom').value)">
-      </div>
-      <div class="form-group" style="flex:0;min-width:auto;align-items:center;justify-content:flex-end">
-        <label>Aperçu</label>
-        <div id="cl-logo-preview" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center"></div>
-      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;margin-top:0.5rem;margin-bottom:1rem">
+      <button class="btn btn-secondary" type="button" onclick="document.getElementById('cl-logo-file').click()">📁 Charger un logo</button>
+      <input type="file" id="cl-logo-file" accept="image/*" style="display:none" onchange="loadLogoFile(this, 'cl-logo', 'cl-logo-preview')">
+      <span id="cl-file-label" style="display:none;color:var(--accent);font-size:0.85rem;font-weight:600">✓ Logo prêt</span>
     </div>
     <button class="btn btn-primary" onclick="addClient()">Ajouter</button>
   </div>
@@ -979,14 +976,12 @@ function loadLogoFile(input, logoFieldId, previewId) {
   const reader = new FileReader();
   reader.onload = function(e) {
     const dataUrl = e.target.result;
-    // Stocker dans le champ caché
     document.getElementById(logoFieldId).value = dataUrl;
-    // Afficher l'aperçu
     document.getElementById(previewId).innerHTML =
       `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
-    // Afficher le label "Nouveau logo prêt"
-    const labelId = logoFieldId.replace('logo', 'file-label').replace('cl-', 'edit-cl-').replace('edit-edit-','edit-');
-    const lbl = document.getElementById(labelId) || document.getElementById('edit-cl-file-label') || document.getElementById('cl-file-label');
+    // Afficher le label de confirmation (cl- ou edit-cl-)
+    const prefix = logoFieldId.startsWith('edit') ? 'edit-cl' : 'cl';
+    const lbl = document.getElementById(prefix + '-file-label');
     if (lbl) lbl.style.display = 'inline';
   };
   reader.readAsDataURL(file);
@@ -1013,6 +1008,9 @@ function addClient() {
   save();
   document.getElementById('cl-nom').value = '';
   document.getElementById('cl-logo').value = '';
+  document.getElementById('cl-logo-file').value = '';
+  document.getElementById('cl-file-label').style.display = 'none';
+  document.getElementById('cl-logo-preview').innerHTML = '';
   renderClients();
   refreshSelects();
   toast('Client ajouté ✓');
