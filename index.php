@@ -787,8 +787,9 @@ function importCollaborateurs(input) {
   reader.onload = function(e) {
     try {
       const wb   = XLSX.read(e.target.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const ws   = wb.Sheets['Feuil1'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { toast('Onglet "Feuil1" introuvable dans le fichier', 'error'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
       if (!rows.length) { toast('Fichier vide ou non reconnu', 'error'); return; }
 
       // Première passe : créer tous les collaborateurs sans co-pilote
@@ -842,17 +843,16 @@ function importCollaborateurs(input) {
 
 function excelDateToISO(val) {
   if (!val && val !== 0) return '';
-  if (typeof val === 'number') {
-    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-    return d.toISOString().split('T')[0];
-  }
   const s = val.toString().trim();
   if (!s) return '';
-  // Format DD/MM/YYYY
+  // Format DD/MM/YYYY ou DD-MM-YYYY
   const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
   // Format YYYY-MM-DD déjà correct
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Format MM/DD/YYYY (Excel US)
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m2) return `${m2[3]}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`;
   return '';
 }
 
