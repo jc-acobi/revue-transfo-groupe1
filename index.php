@@ -791,7 +791,6 @@ function importCollaborateurs(input) {
       if (!ws) { toast('Onglet "Feuil1" introuvable dans le fichier', 'error'); return; }
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
       if (!rows.length) { toast('Fichier vide ou non reconnu', 'error'); return; }
-      console.log('Première ligne lue :', JSON.stringify(rows[0]));
 
       // Première passe : créer tous les collaborateurs sans co-pilote
       const newIds = {};
@@ -800,7 +799,8 @@ function importCollaborateurs(input) {
         const nom    = (row['Nom']    || '').toString().trim();
         const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
         if (!nom || !prenom) return;
-        const sexe       = (row['Sexe']   || '').toString().trim();
+        const sexeRaw    = (row['Sexe'] || '').toString().trim().toLowerCase();
+        const sexe       = sexeRaw === 'masculin' ? 'Homme' : (sexeRaw === 'féminin' || sexeRaw === 'feminin') ? 'Femme' : (row['Sexe'] || '').toString().trim();
         const dateEntree = excelDateToISO(row['Entrée'] || row['Entree'] || row['Date entrée'] || '');
         const dateSortie = excelDateToISO(row['Sortie'] || row['Date sortie'] || '');
         const key = (prenom + ' ' + nom).toLowerCase();
@@ -822,7 +822,7 @@ function importCollaborateurs(input) {
         const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
         if (!nom || !prenom) return;
         const copiloteStr = (row['Co-pilote'] || row['Copilote'] || '').toString().trim();
-        if (!copiloteStr) return;
+        if (!copiloteStr || copiloteStr.toLowerCase() === 'n/a') return;
         const key = (prenom + ' ' + nom).toLowerCase();
         const collab = DB.collaborateurs.find(c => c.id === newIds[key]);
         if (!collab) return;
@@ -847,14 +847,14 @@ function excelDateToISO(val) {
   if (!val && val !== 0) return '';
   const s = val.toString().trim();
   if (!s) return '';
-  // Format DD/MM/YYYY ou DD-MM-YYYY
-  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  // Format DD/MM/YYYY ou DD/MM/YY
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    const y = m[3].length === 2 ? '20' + m[3] : m[3];
+    return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  }
   // Format YYYY-MM-DD déjà correct
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Format MM/DD/YYYY (Excel US)
-  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m2) return `${m2[3]}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`;
   return '';
 }
 
