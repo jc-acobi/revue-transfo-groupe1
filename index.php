@@ -540,7 +540,7 @@
   <div class="form-card">
     <h3>📥 Importer depuis Excel</h3>
     <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">
-      Colonnes attendues : <strong>Titre</strong>, <strong>Client</strong>, <strong>Collaborateurs</strong> (séparés par « ; »), <strong>Date début</strong>, <strong>Date fin</strong>, <strong>Statut</strong> (en_cours / terminee)
+      Colonnes attendues : <strong>Nom</strong>, <strong>Prénom</strong>, <strong>Client</strong>, <strong>Titre Mission</strong>, <strong>Date Début</strong>, <strong>Date Fin</strong>, <strong>Détails Missions</strong>
     </p>
     <div class="import-zone" id="drop-zone" onclick="document.getElementById('excel-input').click()"
          ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -1103,44 +1103,45 @@ function handleExcelFile(file) {
   reader.onload = function(e) {
     try {
       const wb   = XLSX.read(e.target.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const ws   = wb.Sheets['Feuil1'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { toast('Onglet "Feuil1" introuvable', 'error'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+
+      // Regrouper les lignes par mission (Titre Mission + Client + Date Début + Date Fin)
+      const missionsMap = {};
+      rows.forEach(row => {
+        const titre = (row['Titre Mission'] || '').toString().trim();
+        if (!titre) return;
+        const clientNom = (row['Client'] || '').toString().trim();
+        const debut     = excelDateToISO(row['Date Début'] || row['Date Debut'] || '');
+        const fin       = excelDateToISO(row['Date Fin']   || '');
+        const details   = (row['Détails Missions'] || row['Details Missions'] || '').toString().trim();
+        const nom       = (row['Nom']    || '').toString().trim();
+        const prenom    = (row['Prénom'] || row['Prenom'] || '').toString().trim();
+
+        const key = [titre, clientNom, debut, fin].join('|');
+        if (!missionsMap[key]) {
+          missionsMap[key] = { titre, clientNom, debut, fin, details, collabIds: [] };
+        }
+
+        if (nom || prenom) {
+          const fullName = (prenom + ' ' + nom).trim().toLowerCase();
+          let c = DB.collaborateurs.find(x => (x.prenom + ' ' + x.nom).toLowerCase() === fullName);
+          if (!c) { c = { id: uid(), nom, prenom, sexe: '', dateEntree: '', dateSortie: '', copilote: '' }; DB.collaborateurs.push(c); }
+          if (!missionsMap[key].collabIds.includes(c.id)) missionsMap[key].collabIds.push(c.id);
+        }
+      });
 
       let added = 0;
-      rows.forEach(row => {
-        const titre  = (row['Titre'] || row['titre'] || '').toString().trim();
-        if (!titre) return;
-
-        const clientNom = (row['Client'] || row['client'] || '').toString().trim();
-        const statut    = (row['Statut'] || row['statut'] || 'en_cours').toString().trim();
-        const debut     = excelDateToString(row['Date début'] || row['Date debut'] || row['date_debut'] || '');
-        const fin       = excelDateToString(row['Date fin']   || row['Date fin']   || row['date_fin']   || '');
-        const collabStr = (row['Collaborateurs'] || row['collaborateurs'] || '').toString().trim();
-
-        // Créer le client s'il n'existe pas
+      Object.values(missionsMap).forEach(({ titre, clientNom, debut, fin, details, collabIds }) => {
         let clientId = '';
         if (clientNom) {
           let c = DB.clients.find(x => x.nom.toLowerCase() === clientNom.toLowerCase());
           if (!c) { c = { id: uid(), nom: clientNom, logo: '' }; DB.clients.push(c); }
           clientId = c.id;
         }
-
-        // Créer les collaborateurs s'ils n'existent pas
-        const collabIds = [];
-        if (collabStr) {
-          collabStr.split(';').map(s => s.trim()).filter(Boolean).forEach(name => {
-            const parts  = name.split(' ');
-            const prenom = parts[0] || '';
-            const nom    = parts.slice(1).join(' ') || '';
-            let c = DB.collaborateurs.find(x =>
-              (x.prenom + ' ' + x.nom).toLowerCase() === name.toLowerCase()
-            );
-            if (!c) { c = { id: uid(), prenom, nom, role: '' }; DB.collaborateurs.push(c); }
-            collabIds.push(c.id);
-          });
-        }
-
-        DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, statut });
+        const statut = (fin && fin < new Date().toISOString().split('T')[0]) ? 'terminee' : 'en_cours';
+        DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, details, statut });
         added++;
       });
 
@@ -1148,7 +1149,7 @@ function handleExcelFile(file) {
       renderAll();
       toast(`${added} mission(s) importée(s) ✓`);
     } catch(err) {
-      toast('Erreur lors de la lecture du fichier', 'error');
+      toast('Erreur : ' + err.message, 'error');
       console.error(err);
     }
   };
