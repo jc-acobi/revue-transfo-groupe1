@@ -343,6 +343,11 @@
       letter-spacing: 0.08em;
       font-weight: 700;
     }
+    .data-table th.sortable { cursor: pointer; user-select: none; }
+    .data-table th.sortable:hover { color: var(--accent); }
+    .data-table th.sortable::after { content: ' ⇅'; opacity: 0.4; font-size: 0.7rem; }
+    .data-table th.sort-asc::after  { content: ' ▲'; opacity: 1; color: var(--accent); }
+    .data-table th.sort-desc::after { content: ' ▼'; opacity: 1; color: var(--accent); }
     .data-table th:first-child { border-radius: 8px 0 0 8px; }
     .data-table th:last-child  { border-radius: 0 8px 8px 0; }
     .data-table td {
@@ -567,7 +572,14 @@
   </div>
 
   <table class="data-table" id="table-collabs" style="width:100%">
-    <thead><tr><th>Prénom Nom</th><th>Sexe</th><th>Date entrée</th><th>Date sortie</th><th>Co-pilote</th><th>Actions</th></tr></thead>
+    <thead><tr>
+      <th class="sortable" onclick="sortTable('collabs','prenom')">Prénom Nom</th>
+      <th class="sortable" onclick="sortTable('collabs','sexe')">Sexe</th>
+      <th class="sortable" onclick="sortTable('collabs','dateEntree')">Date entrée</th>
+      <th class="sortable" onclick="sortTable('collabs','dateSortie')">Date sortie</th>
+      <th class="sortable" onclick="sortTable('collabs','copilote')">Co-pilote</th>
+      <th>Actions</th>
+    </tr></thead>
   </table>
   <div style="max-height:296px;overflow-y:auto;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px">
     <table class="data-table" style="width:100%"><tbody id="tbody-collabs"></tbody></table>
@@ -604,7 +616,11 @@
   </div>
 
   <table class="data-table" id="table-clients">
-    <thead><tr><th>Client</th><th>Logo</th><th>Actions</th></tr></thead>
+    <thead><tr>
+      <th class="sortable" onclick="sortTable('clients','nom')">Client</th>
+      <th>Logo</th>
+      <th>Actions</th>
+    </tr></thead>
     <tbody></tbody>
   </table>
 
@@ -658,8 +674,31 @@
     <button class="btn btn-primary" onclick="addMission()">Ajouter la mission</button>
   </div>
 
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.8rem;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;gap:0.3rem">
+      <label style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em">Filtrer par client</label>
+      <select id="param-f-client" onchange="renderMissions()" style="background:var(--card-alt);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;font-family:inherit;font-size:0.9rem;min-width:180px">
+        <option value="">Tous</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.3rem">
+      <label style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em">Filtrer par collaborateur</label>
+      <select id="param-f-collab" onchange="renderMissions()" style="background:var(--card-alt);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;font-family:inherit;font-size:0.9rem;min-width:200px">
+        <option value="">Tous</option>
+      </select>
+    </div>
+    <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:0.5rem 1rem;font-size:0.85rem" onclick="document.getElementById('param-f-client').value='';document.getElementById('param-f-collab').value='';renderMissions()">✕ Effacer</button>
+  </div>
+
   <table class="data-table" id="table-missions">
-    <thead><tr><th>Mission</th><th>Client</th><th>Collaborateurs</th><th>Période</th><th>Statut</th><th style="min-width:140px">Actions</th></tr></thead>
+    <thead><tr>
+      <th class="sortable" onclick="sortTable('missions','titre')">Mission</th>
+      <th class="sortable" onclick="sortTable('missions','client')">Client</th>
+      <th class="sortable" onclick="sortTable('missions','collabs')">Collaborateurs</th>
+      <th class="sortable" onclick="sortTable('missions','debut')">Période</th>
+      <th class="sortable" onclick="sortTable('missions','statut')">Statut</th>
+      <th style="min-width:140px">Actions</th>
+    </tr></thead>
     <tbody></tbody>
   </table>
 
@@ -786,6 +825,68 @@ async function load() {
   } catch(e) {
     DB = { collaborateurs: [], missions: [], clients: [] };
   }
+}
+
+// ── Tri des tableaux ──
+const sortState = {
+  collabs:  { col: null, dir: 1 },
+  clients:  { col: null, dir: 1 },
+  missions: { col: null, dir: 1 }
+};
+function sortTable(table, col) {
+  if (sortState[table].col === col) sortState[table].dir *= -1;
+  else { sortState[table].col = col; sortState[table].dir = 1; }
+  if (table === 'collabs')  renderCollaborateurs();
+  if (table === 'clients')  renderClients();
+  if (table === 'missions') renderMissions();
+}
+function updateSortHeaders(tableId, table) {
+  document.querySelectorAll('#' + tableId + ' th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.getAttribute('onclick').includes("'" + sortState[table].col + "'")) {
+      th.classList.add(sortState[table].dir === 1 ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+function applySortCollabs(list) {
+  const { col, dir } = sortState.collabs;
+  if (!col) return list;
+  return [...list].sort((a, b) => {
+    let va = col === 'prenom' ? (a.prenom + ' ' + a.nom) : (a[col] || '');
+    let vb = col === 'prenom' ? (b.prenom + ' ' + b.nom) : (b[col] || '');
+    if (col === 'copilote') {
+      const ca = DB.collaborateurs.find(x => x.id === a.copilote);
+      const cb = DB.collaborateurs.find(x => x.id === b.copilote);
+      va = ca ? ca.prenom + ' ' + ca.nom : '';
+      vb = cb ? cb.prenom + ' ' + cb.nom : '';
+    }
+    return va.localeCompare(vb, 'fr') * dir;
+  });
+}
+function applySortClients(list) {
+  const { col, dir } = sortState.clients;
+  if (!col) return list;
+  return [...list].sort((a, b) => (a[col] || '').localeCompare(b[col] || '', 'fr') * dir);
+}
+function applySortMissions(list) {
+  const { col, dir } = sortState.missions;
+  if (!col) return list;
+  return [...list].sort((a, b) => {
+    let va = '', vb = '';
+    if (col === 'titre')  { va = a.titre || ''; vb = b.titre || ''; }
+    if (col === 'client') {
+      const ca = DB.clients.find(x => x.id === a.clientId);
+      const cb = DB.clients.find(x => x.id === b.clientId);
+      va = ca ? ca.nom : ''; vb = cb ? cb.nom : '';
+    }
+    if (col === 'collabs') {
+      va = (a.collabIds || []).map(id => { const c = DB.collaborateurs.find(x => x.id === id); return c ? c.prenom + ' ' + c.nom : ''; }).join(', ');
+      vb = (b.collabIds || []).map(id => { const c = DB.collaborateurs.find(x => x.id === id); return c ? c.prenom + ' ' + c.nom : ''; }).join(', ');
+    }
+    if (col === 'debut')  { va = a.debut || ''; vb = b.debut || ''; }
+    if (col === 'statut') { va = getStatut(a); vb = getStatut(b); }
+    return va.localeCompare(vb, 'fr') * dir;
+  });
 }
 
 // ── ID unique ──
@@ -925,11 +1026,13 @@ function deleteCollaborateur(id) {
 
 function renderCollaborateurs() {
   const tbody = document.getElementById('tbody-collabs');
-  if (!DB.collaborateurs.length) {
+  updateSortHeaders('table-collabs', 'collabs');
+  const list = applySortCollabs(DB.collaborateurs);
+  if (!list.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun collaborateur</td></tr>';
     return;
   }
-  tbody.innerHTML = DB.collaborateurs.map(c => {
+  tbody.innerHTML = list.map(c => {
     const copilote = c.copilote ? DB.collaborateurs.find(x => x.id === c.copilote) : null;
     const copiloteLabel = copilote ? `${copilote.prenom} ${copilote.nom}` : '—';
     const fmt = d => d ? d.split('-').reverse().join('/') : '—';
@@ -1132,11 +1235,13 @@ function deleteClient(id) {
 
 function renderClients() {
   const tbody = document.querySelector('#table-clients tbody');
-  if (!DB.clients.length) {
+  updateSortHeaders('table-clients', 'clients');
+  const list = applySortClients(DB.clients);
+  if (!list.length) {
     tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun client</td></tr>';
     return;
   }
-  tbody.innerHTML = DB.clients.map(c => `
+  tbody.innerHTML = list.map(c => `
     <tr onclick="openEditClient('${c.id}')" style="cursor:pointer" title="Cliquer pour modifier">
       <td>${c.nom}</td>
       <td><span class="logo-mini">${logoHtml(c.logo, 28, c.nom)}</span></td>
@@ -1308,11 +1413,32 @@ function deleteMission(id) {
 
 function renderMissions() {
   const tbody = document.querySelector('#table-missions tbody');
-  if (!DB.missions.length) {
+  updateSortHeaders('table-missions', 'missions');
+
+  // Mettre à jour les filtres
+  const pfClient = document.getElementById('param-f-client');
+  const pfCollab = document.getElementById('param-f-collab');
+  if (pfClient && pfCollab) {
+    const prevClient = pfClient.value, prevCollab = pfCollab.value;
+    pfClient.innerHTML = '<option value="">Tous</option>' + DB.clients.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+    pfCollab.innerHTML = '<option value="">Tous</option>' + DB.collaborateurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('');
+    pfClient.value = prevClient; pfCollab.value = prevCollab;
+  }
+
+  const fClient = pfClient ? pfClient.value : '';
+  const fCollab = pfCollab ? pfCollab.value : '';
+  let list = DB.missions.filter(m => {
+    if (fClient && m.clientId !== fClient) return false;
+    if (fCollab && !(m.collabIds || []).includes(fCollab)) return false;
+    return true;
+  });
+  list = applySortMissions(list);
+
+  if (!list.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucune mission</td></tr>';
     return;
   }
-  tbody.innerHTML = DB.missions.map(m => {
+  tbody.innerHTML = list.map(m => {
     const client = DB.clients.find(c => c.id === m.clientId);
     const collabs = (m.collabIds || []).map(id => {
       const c = DB.collaborateurs.find(x => x.id === id);
