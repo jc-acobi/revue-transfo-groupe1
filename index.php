@@ -624,7 +624,7 @@
     <div id="import-missions-summary" style="display:none;margin-bottom:1rem"></div>
     <div class="form-row">
       <div class="form-group" style="flex:2">
-        <label>Titre de la mission *</label>
+        <label>Titre de la mission</label>
         <input type="text" id="m-titre" placeholder="ex. Transformation digitale">
       </div>
       <div class="form-group">
@@ -935,7 +935,7 @@ function renderCollaborateurs() {
     const fmt = d => d ? d.split('-').reverse().join('/') : '—';
     return `
     <tr>
-      <td>${c.nom} ${c.prenom}</td>
+      <td>${c.prenom} ${c.nom}</td>
       <td style="color:var(--text-muted)">${c.sexe || '—'}</td>
       <td style="color:var(--text-muted)">${fmt(c.dateEntree)}</td>
       <td style="color:var(--text-muted)">${fmt(c.dateSortie)}</td>
@@ -1227,7 +1227,6 @@ function addMission(data = null) {
     debut     = document.getElementById('m-debut').value;
     fin       = document.getElementById('m-fin').value;
     details   = document.getElementById('m-details').value.trim();
-    if (!titre)    { toast('Titre de mission requis', 'error'); return; }
     if (!clientId) { toast('Client requis', 'error'); return; }
     if (!collabId) { toast('Collaborateur requis', 'error'); return; }
     if (!debut)    { toast('Date de début requise', 'error'); return; }
@@ -1268,7 +1267,7 @@ function openEditMission(id) {
   const firstCollabId = (m.collabIds || [])[0] || '';
   const firstCollab = firstCollabId ? DB.collaborateurs.find(x => x.id === firstCollabId) : null;
   document.getElementById('edit-collabs').value = firstCollabId;
-  document.getElementById('edit-collab-search').value = firstCollab ? firstCollab.nom + ' ' + firstCollab.prenom : '';
+  document.getElementById('edit-collab-search').value = firstCollab ? firstCollab.prenom + ' ' + firstCollab.nom : '';
 
   document.getElementById('modal-edit').classList.add('open');
 }
@@ -1286,8 +1285,6 @@ function saveEditMission() {
   const debut    = document.getElementById('edit-debut').value;
   const fin      = document.getElementById('edit-fin').value;
   const details  = document.getElementById('edit-details').value.trim();
-
-  if (!titre) { toast('Titre de mission requis', 'error'); return; }
 
   const idx = DB.missions.findIndex(x => x.id === id);
   if (idx === -1) return;
@@ -1426,7 +1423,7 @@ function filterCollabDropdown(prefix) {
     })
     .sort((a, b) => a.prenom.localeCompare(b.prenom, 'fr'));
   dd.innerHTML = matches.length
-    ? matches.map(c => `<div class="collab-dd-item" onmousedown="selectCollabDD('${prefix}','${c.id}','${c.nom} ${c.prenom}')">${c.nom} ${c.prenom}</div>`).join('')
+    ? matches.map(c => `<div class="collab-dd-item" onmousedown="selectCollabDD('${prefix}','${c.id}','${c.prenom} ${c.nom}')">${c.prenom} ${c.nom}</div>`).join('')
     : '<div style="padding:0.5rem 0.9rem;color:var(--text-muted);font-size:0.85rem">Aucun résultat</div>';
   dd.style.display = 'block';
 }
