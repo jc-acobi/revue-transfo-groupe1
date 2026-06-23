@@ -258,6 +258,28 @@
     }
     .form-group select[multiple] { height: 100px; }
 
+    /* ── LISTE COLLABORATEUR AVEC FILTRE ── */
+    .collab-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      background: var(--card-bg);
+      border: 1px solid var(--accent);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .collab-dd-item {
+      padding: 0.5rem 0.9rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .collab-dd-item:hover { background: var(--card-alt); }
+
     /* ── SOUS-ONGLETS PARAMÉTRAGE ── */
     .subtabs {
       display: flex;
@@ -592,52 +614,34 @@
   <div id="subtab-missions" class="subtab-content">
   <div class="section-title">📋 Missions</div>
 
-  <!-- Import Excel -->
-  <div class="form-card">
-    <h3>📥 Importer depuis Excel</h3>
-    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">
-      Colonnes attendues : <strong>Nom</strong>, <strong>Prénom</strong>, <strong>Client</strong>, <strong>Titre Mission</strong>, <strong>Date Début</strong>, <strong>Date Fin</strong>, <strong>Détails Missions</strong>
-    </p>
-    <div class="import-zone" id="drop-zone" onclick="document.getElementById('excel-input').click()"
-         ondragover="event.preventDefault();this.classList.add('drag-over')"
-         ondragleave="this.classList.remove('drag-over')"
-         ondrop="handleDrop(event)">
-      <div class="icon">📊</div>
-      <p><strong>Cliquez</strong> ou déposez votre fichier Excel ici</p>
-      <p style="margin-top:0.3rem;font-size:0.8rem;">.xlsx ou .xls acceptés</p>
-    </div>
-    <input type="file" id="excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(this.files[0])">
-  </div>
-
   <!-- Formulaire mission -->
   <div class="form-card">
-    <h3>Saisir une mission manuellement</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
+      <h3>Ajouter une mission</h3>
+      <button class="btn" style="background:var(--card-alt);color:var(--accent);border:1px solid var(--accent);font-size:0.85rem" onclick="document.getElementById('m-import-input').click()">📥 Import en masse</button>
+      <input type="file" id="m-import-input" accept=".xlsx,.xls" style="display:none" onchange="importMissions(this)">
+    </div>
+    <div id="import-missions-summary" style="display:none;margin-bottom:1rem"></div>
     <div class="form-row">
       <div class="form-group" style="flex:2">
-        <label>Titre de la mission</label>
+        <label>Titre de la mission *</label>
         <input type="text" id="m-titre" placeholder="ex. Transformation digitale">
       </div>
       <div class="form-group">
-        <label>Statut</label>
-        <select id="m-statut">
-          <option value="en_cours">En cours</option>
-          <option value="terminee">Terminée</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Client</label>
+        <label>Client *</label>
         <select id="m-client"><option value="">-- Sélectionner --</option></select>
       </div>
-      <div class="form-group">
-        <label>Collaborateurs</label>
-        <select id="m-collabs" multiple title="Maintenez Ctrl/Cmd pour sélectionner plusieurs"></select>
-      </div>
     </div>
     <div class="form-row">
+      <div class="form-group" style="position:relative">
+        <label>Collaborateur *</label>
+        <input type="text" id="m-collab-search" placeholder="Rechercher..." autocomplete="off"
+          oninput="filterCollabDropdown('m')" onfocus="showCollabDropdown('m')" onblur="hideCollabDropdown('m')">
+        <input type="hidden" id="m-collabs">
+        <div id="m-collab-dd" class="collab-dropdown"></div>
+      </div>
       <div class="form-group">
-        <label>Date de début</label>
+        <label>Date de début *</label>
         <input type="date" id="m-debut">
       </div>
       <div class="form-group">
@@ -648,7 +652,7 @@
     <div class="form-row">
       <div class="form-group" style="flex:1">
         <label>Détails de la mission</label>
-        <textarea id="m-details" rows="3" placeholder="Description, contexte, objectifs…" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;font-family:inherit;font-size:0.95rem;resize:vertical"></textarea>
+        <textarea id="m-details" rows="3" placeholder="Description, contexte, objectifs…" style="width:100%;background:var(--card-alt);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;font-family:inherit;font-size:0.95rem;resize:vertical"></textarea>
       </div>
     </div>
     <button class="btn btn-primary" onclick="addMission()">Ajouter la mission</button>
@@ -718,21 +722,17 @@
         <input type="text" id="edit-titre" placeholder="ex. Transformation digitale">
       </div>
       <div class="form-group">
-        <label>Statut</label>
-        <select id="edit-statut">
-          <option value="en_cours">En cours</option>
-          <option value="terminee">Terminée</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
         <label>Client</label>
         <select id="edit-client"><option value="">-- Sélectionner --</option></select>
       </div>
-      <div class="form-group">
-        <label>Collaborateurs</label>
-        <select id="edit-collabs" multiple title="Maintenez Ctrl/Cmd pour sélectionner plusieurs"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="position:relative">
+        <label>Collaborateur</label>
+        <input type="text" id="edit-collab-search" placeholder="Rechercher..." autocomplete="off"
+          oninput="filterCollabDropdown('edit')" onfocus="showCollabDropdown('edit')" onblur="hideCollabDropdown('edit')">
+        <input type="hidden" id="edit-collabs">
+        <div id="edit-collab-dd" class="collab-dropdown"></div>
       </div>
     </div>
     <div class="form-row">
@@ -1156,13 +1156,6 @@ function refreshSelects() {
     DB.clients.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
   mClient.value = prev;
 
-  // Select collaborateurs (formulaire mission)
-  const mCollabs = document.getElementById('m-collabs');
-  const prevSel = Array.from(mCollabs.selectedOptions).map(o => o.value);
-  mCollabs.innerHTML = DB.collaborateurs.map(c =>
-    `<option value="${c.id}" ${prevSel.includes(c.id) ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`
-  ).join('');
-
   // Select co-pilote (formulaire collaborateur)
   const editId = document.getElementById('c-edit-id').value;
   refreshCopiloteSelect(editId || null);
@@ -1217,34 +1210,43 @@ function importClients(input) {
 // ══════════════════════════════════════════
 //  MISSIONS
 // ══════════════════════════════════════════
+function getStatut(m) {
+  const today = new Date().toISOString().split('T')[0];
+  return (m.fin && m.fin < today) ? 'terminee' : 'en_cours';
+}
+
 function addMission(data = null) {
-  let titre, clientId, collabIds, debut, fin, statut, details;
+  let titre, clientId, collabIds, debut, fin, details;
   if (data) {
-    ({ titre, clientId, collabIds, debut, fin, statut, details } = data);
+    ({ titre, clientId, collabIds, debut, fin, details } = data);
   } else {
     titre     = document.getElementById('m-titre').value.trim();
     clientId  = document.getElementById('m-client').value;
-    collabIds = Array.from(document.getElementById('m-collabs').selectedOptions).map(o => o.value);
+    const collabId = document.getElementById('m-collabs').value;
+    collabIds = collabId ? [collabId] : [];
     debut     = document.getElementById('m-debut').value;
     fin       = document.getElementById('m-fin').value;
-    statut    = document.getElementById('m-statut').value;
     details   = document.getElementById('m-details').value.trim();
+    if (!titre)    { toast('Titre de mission requis', 'error'); return; }
+    if (!clientId) { toast('Client requis', 'error'); return; }
+    if (!collabId) { toast('Collaborateur requis', 'error'); return; }
+    if (!debut)    { toast('Date de début requise', 'error'); return; }
   }
-  if (!titre) { toast('Titre de mission requis', 'error'); return; }
 
-  DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, details: details || '', statut: statut || 'en_cours' });
+  DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin: fin || '', details: details || '' });
   save();
 
   if (!data) {
     document.getElementById('m-titre').value = '';
     document.getElementById('m-client').value = '';
+    document.getElementById('m-collab-search').value = '';
+    document.getElementById('m-collabs').value = '';
     document.getElementById('m-debut').value = '';
     document.getElementById('m-fin').value = '';
-    document.getElementById('m-statut').value = 'en_cours';
     document.getElementById('m-details').value = '';
-    Array.from(document.getElementById('m-collabs').options).forEach(o => o.selected = false);
   }
   renderMissions();
+  toast('Mission ajoutée ✓');
 }
 
 function openEditMission(id) {
@@ -1253,7 +1255,6 @@ function openEditMission(id) {
 
   document.getElementById('edit-id').value      = m.id;
   document.getElementById('edit-titre').value   = m.titre;
-  document.getElementById('edit-statut').value  = m.statut;
   document.getElementById('edit-debut').value   = m.debut   || '';
   document.getElementById('edit-fin').value     = m.fin     || '';
   document.getElementById('edit-details').value = m.details || '';
@@ -1263,11 +1264,11 @@ function openEditMission(id) {
   editClient.innerHTML = '<option value="">-- Sélectionner --</option>' +
     DB.clients.map(c => `<option value="${c.id}" ${c.id === m.clientId ? 'selected' : ''}>${c.nom}</option>`).join('');
 
-  // Remplir le select collaborateurs
-  const editCollabs = document.getElementById('edit-collabs');
-  editCollabs.innerHTML = DB.collaborateurs.map(c =>
-    `<option value="${c.id}" ${(m.collabIds || []).includes(c.id) ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`
-  ).join('');
+  // Pré-remplir le collaborateur
+  const firstCollabId = (m.collabIds || [])[0] || '';
+  const firstCollab = firstCollabId ? DB.collaborateurs.find(x => x.id === firstCollabId) : null;
+  document.getElementById('edit-collabs').value = firstCollabId;
+  document.getElementById('edit-collab-search').value = firstCollab ? firstCollab.nom + ' ' + firstCollab.prenom : '';
 
   document.getElementById('modal-edit').classList.add('open');
 }
@@ -1279,9 +1280,9 @@ function closeEditModal() {
 function saveEditMission() {
   const id       = document.getElementById('edit-id').value;
   const titre    = document.getElementById('edit-titre').value.trim();
-  const statut   = document.getElementById('edit-statut').value;
   const clientId = document.getElementById('edit-client').value;
-  const collabIds = Array.from(document.getElementById('edit-collabs').selectedOptions).map(o => o.value);
+  const collabId = document.getElementById('edit-collabs').value;
+  const collabIds = collabId ? [collabId] : [];
   const debut    = document.getElementById('edit-debut').value;
   const fin      = document.getElementById('edit-fin').value;
   const details  = document.getElementById('edit-details').value.trim();
@@ -1290,7 +1291,7 @@ function saveEditMission() {
 
   const idx = DB.missions.findIndex(x => x.id === id);
   if (idx === -1) return;
-  DB.missions[idx] = { id, titre, statut, clientId, collabIds, debut, fin, details };
+  DB.missions[idx] = { id, titre, clientId, collabIds, debut, fin: fin || '', details };
   save();
   closeEditModal();
   renderMissions();
@@ -1321,8 +1322,9 @@ function renderMissions() {
       return c ? `${c.prenom} ${c.nom}` : '';
     }).filter(Boolean).join(', ');
     const periode = [m.debut, m.fin].filter(Boolean).map(d => formatDate(d)).join(' → ') || '—';
-    const badgeCls = m.statut === 'en_cours' ? 'badge-encours' : 'badge-terminee';
-    const badgeLbl = m.statut === 'en_cours' ? 'En cours' : 'Terminée';
+    const statut = getStatut(m);
+    const badgeCls = statut === 'en_cours' ? 'badge-encours' : 'badge-terminee';
+    const badgeLbl = statut === 'en_cours' ? 'En cours' : 'Terminée';
     return `
       <tr onclick="openEditMission('${m.id}')" style="cursor:pointer" title="Cliquer pour modifier">
         <td>${m.titre}</td>
@@ -1345,7 +1347,7 @@ function renderCards() {
   const fSearch = document.getElementById('f-search').value.toLowerCase();
 
   let missions = DB.missions.filter(m => {
-    if (fStatut && m.statut !== fStatut) return false;
+    if (fStatut && getStatut(m) !== fStatut) return false;
     if (fClient && m.clientId !== fClient) return false;
     if (fCollab && !(m.collabIds || []).includes(fCollab)) return false;
     if (fSearch && !m.titre.toLowerCase().includes(fSearch)) return false;
@@ -1368,8 +1370,9 @@ function renderCards() {
       const c = DB.collaborateurs.find(x => x.id === id);
       return c ? `${c.prenom} ${c.nom}` : '';
     }).filter(Boolean).join(', ');
-    const badgeCls = m.statut === 'en_cours' ? 'badge-encours' : 'badge-terminee';
-    const badgeLbl = m.statut === 'en_cours' ? '🔄 En cours' : '✅ Terminée';
+    const statut2  = getStatut(m);
+    const badgeCls = statut2 === 'en_cours' ? 'badge-encours' : 'badge-terminee';
+    const badgeLbl = statut2 === 'en_cours' ? '🔄 En cours' : '✅ Terminée';
     const periode  = [m.debut, m.fin].filter(Boolean).map(d => formatDate(d)).join(' → ');
 
     return `
@@ -1386,8 +1389,8 @@ function renderCards() {
 
 function renderStats() {
   const total    = DB.missions.length;
-  const encours  = DB.missions.filter(m => m.statut === 'en_cours').length;
-  const termines = DB.missions.filter(m => m.statut === 'terminee').length;
+  const encours  = DB.missions.filter(m => getStatut(m) === 'en_cours').length;
+  const termines = DB.missions.filter(m => getStatut(m) === 'terminee').length;
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-chip"><span class="val">${total}</span><span class="lbl">Missions totales</span></div>
     <div class="stat-chip"><span class="val" style="color:var(--accent2)">${encours}</span><span class="lbl">En cours</span></div>
@@ -1408,6 +1411,116 @@ function renderAll() {
 // ══════════════════════════════════════════
 //  IMPORT EXCEL
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+//  DROPDOWN COLLABORATEUR AVEC FILTRE
+// ══════════════════════════════════════════
+function filterCollabDropdown(prefix) {
+  const search = (document.getElementById(prefix + '-collab-search').value || '').toLowerCase();
+  const today  = new Date().toISOString().split('T')[0];
+  const dd     = document.getElementById(prefix + '-collab-dd');
+  const matches = DB.collaborateurs
+    .filter(c => !c.dateSortie || c.dateSortie >= today)
+    .filter(c => {
+      const label = (c.nom + ' ' + c.prenom).toLowerCase();
+      return !search || label.includes(search) || c.prenom.toLowerCase().includes(search) || c.nom.toLowerCase().includes(search);
+    })
+    .sort((a, b) => a.prenom.localeCompare(b.prenom, 'fr'));
+  dd.innerHTML = matches.length
+    ? matches.map(c => `<div class="collab-dd-item" onmousedown="selectCollabDD('${prefix}','${c.id}','${c.nom} ${c.prenom}')">${c.nom} ${c.prenom}</div>`).join('')
+    : '<div style="padding:0.5rem 0.9rem;color:var(--text-muted);font-size:0.85rem">Aucun résultat</div>';
+  dd.style.display = 'block';
+}
+function showCollabDropdown(prefix) { filterCollabDropdown(prefix); }
+function hideCollabDropdown(prefix) {
+  setTimeout(() => { const dd = document.getElementById(prefix + '-collab-dd'); if (dd) dd.style.display = 'none'; }, 200);
+}
+function selectCollabDD(prefix, id, label) {
+  document.getElementById(prefix + '-collabs').value = id;
+  document.getElementById(prefix + '-collab-search').value = label;
+  document.getElementById(prefix + '-collab-dd').style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+//  IMPORT EN MASSE — MISSIONS
+// ══════════════════════════════════════════
+function importMissions(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets['Feuil1'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { toast('Onglet "Feuil1" introuvable', 'error'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+      if (!rows.length) { toast('Fichier vide', 'error'); return; }
+
+      let created = 0, updated = 0;
+      const skipped = [];
+
+      rows.forEach((row, i) => {
+        const titre      = (row['Titre de la mission'] || row['Titre Mission'] || '').toString().trim();
+        const clientNom  = (row['Client'] || '').toString().trim();
+        const collabStr  = (row['Collaborateurs'] || '').toString().trim();
+        const debut      = excelDateToISO(row['Date de début'] || row['Date Début'] || row['Date debut'] || '');
+        const fin        = excelDateToISO(row['Date de fin']   || row['Date Fin']   || row['Date fin']   || '');
+        const details    = (row['Détails de la mission'] || row['Détails Missions'] || '').toString().trim();
+        const lineNum    = i + 2;
+
+        if (!titre)     { skipped.push(`Ligne ${lineNum} : titre manquant`); return; }
+        if (!clientNom) { skipped.push(`Ligne ${lineNum} (${titre}) : client manquant`); return; }
+        if (!collabStr) { skipped.push(`Ligne ${lineNum} (${titre}) : collaborateur manquant`); return; }
+        if (!debut)     { skipped.push(`Ligne ${lineNum} (${titre}) : date de début manquante`); return; }
+
+        // Collaborateur : doit exister
+        const collab = DB.collaborateurs.find(c => (c.nom + ' ' + c.prenom).toLowerCase() === collabStr.toLowerCase()
+          || (c.prenom + ' ' + c.nom).toLowerCase() === collabStr.toLowerCase());
+        if (!collab) { skipped.push(`Ligne ${lineNum} (${titre}) : collaborateur "${collabStr}" introuvable`); return; }
+
+        // Client : créer si inexistant
+        let client = DB.clients.find(c => c.nom.toLowerCase() === clientNom.toLowerCase());
+        if (!client) { client = { id: uid(), nom: clientNom, logo: '' }; DB.clients.push(client); }
+
+        // Mission existante (même titre + client) → mise à jour
+        const existing = DB.missions.find(m => m.titre.toLowerCase() === titre.toLowerCase() && m.clientId === client.id);
+        if (existing) {
+          if (!existing.collabIds.includes(collab.id)) existing.collabIds.push(collab.id);
+          if (debut) existing.debut = debut;
+          if (fin)   existing.fin   = fin;
+          if (details) existing.details = details;
+          updated++;
+        } else {
+          DB.missions.push({ id: uid(), titre, clientId: client.id, collabIds: [collab.id], debut, fin: fin || '', details });
+          created++;
+        }
+      });
+
+      save();
+      renderAll();
+
+      // Afficher le résumé
+      const summaryDiv = document.getElementById('import-missions-summary');
+      let html = `<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem">
+        <div style="font-weight:700;margin-bottom:0.6rem;color:var(--accent)">📊 Résumé de l'import</div>
+        <div>✅ ${created} mission(s) créée(s)</div>
+        <div>🔄 ${updated} mission(s) mise(s) à jour</div>`;
+      if (skipped.length) {
+        html += `<div style="margin-top:0.6rem;color:var(--warning);font-weight:600">⚠️ ${skipped.length} ligne(s) ignorée(s) :</div>
+          <ul style="margin:0.3rem 0 0 1.2rem;color:var(--text-muted);font-size:0.85rem">`;
+        skipped.forEach(s => { html += `<li>${s}</li>`; });
+        html += '</ul>';
+      }
+      html += '</div>';
+      summaryDiv.innerHTML = html;
+      summaryDiv.style.display = 'block';
+    } catch(err) {
+      toast('Erreur : ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function handleDrop(event) {
   event.preventDefault();
   document.getElementById('drop-zone').classList.remove('drag-over');
