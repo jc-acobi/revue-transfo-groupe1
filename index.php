@@ -258,6 +258,36 @@
     }
     .form-group select[multiple] { height: 100px; }
 
+    /* ── SOUS-ONGLETS PARAMÉTRAGE ── */
+    .subtabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+    }
+    .subtab-btn {
+      padding: 0.55rem 1.3rem;
+      border-radius: 8px 8px 0 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .subtab-btn:hover { color: var(--text); }
+    .subtab-btn.active {
+      background: var(--card-alt);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-bottom: 1px solid var(--card-alt);
+    }
+    .subtab-content { display: none; }
+    .subtab-content.active { display: block; }
+
     /* ── BOUTONS ── */
     .btn {
       padding: 0.6rem 1.4rem;
@@ -457,7 +487,15 @@
 ════════════════════════════════════════ -->
 <div id="tab-param" class="tab-content">
 
-  <!-- COLLABORATEURS -->
+  <!-- SOUS-ONGLETS -->
+  <div class="subtabs">
+    <button class="subtab-btn active" onclick="showSubTab('collab')">👤 Collaborateurs</button>
+    <button class="subtab-btn" onclick="showSubTab('clients')">🏢 Clients</button>
+    <button class="subtab-btn" onclick="showSubTab('missions')">📋 Missions</button>
+  </div>
+
+  <!-- SOUS-ONGLET COLLABORATEURS -->
+  <div id="subtab-collab" class="subtab-content active">
   <div class="section-title">👤 Collaborateurs</div>
   <div class="form-card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
@@ -513,8 +551,11 @@
     <table class="data-table" style="width:100%"><tbody id="tbody-collabs"></tbody></table>
   </div>
 
-  <!-- CLIENTS -->
-  <div class="section-title" style="margin-top:2.5rem">🏢 Clients</div>
+  </div><!-- /subtab-collab -->
+
+  <!-- SOUS-ONGLET CLIENTS -->
+  <div id="subtab-clients" class="subtab-content">
+  <div class="section-title">🏢 Clients</div>
   <div class="form-card">
     <h3>Ajouter un client</h3>
     <input type="hidden" id="cl-logo">
@@ -541,8 +582,11 @@
     <tbody></tbody>
   </table>
 
-  <!-- MISSIONS -->
-  <div class="section-title" style="margin-top:2.5rem">📋 Missions</div>
+  </div><!-- /subtab-clients -->
+
+  <!-- SOUS-ONGLET MISSIONS -->
+  <div id="subtab-missions" class="subtab-content">
+  <div class="section-title">📋 Missions</div>
 
   <!-- Import Excel -->
   <div class="form-card">
@@ -610,6 +654,8 @@
     <thead><tr><th>Mission</th><th>Client</th><th>Collaborateurs</th><th>Période</th><th>Statut</th><th>Actions</th></tr></thead>
     <tbody></tbody>
   </table>
+
+  </div><!-- /subtab-missions -->
 
 </div>
 
@@ -746,6 +792,15 @@ function uid() {
 // ══════════════════════════════════════════
 //  NAVIGATION ONGLETS
 // ══════════════════════════════════════════
+function showSubTab(name) {
+  document.querySelectorAll('.subtab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.subtab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('subtab-' + name).classList.add('active');
+  document.querySelectorAll('.subtab-btn').forEach(btn => {
+    if (btn.getAttribute('onclick').includes("'" + name + "'")) btn.classList.add('active');
+  });
+}
+
 function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
