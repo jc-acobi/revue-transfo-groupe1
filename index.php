@@ -738,10 +738,23 @@ function renderCollaborateurs() {
 // ══════════════════════════════════════════
 function isUrl(s) { return s.startsWith('http'); }
 
-function logoHtml(logo, size = 40) {
-  if (!logo) return '<span style="font-size:1.4rem">🏢</span>';
-  if (isUrl(logo)) return `<img src="${logo}" style="width:${size}px;height:${size}px;object-fit:contain;border-radius:6px">`;
+function logoHtml(logo, size = 40, clientNom = '') {
+  if (!logo) return initialesHtml(clientNom, size);
+  if (isUrl(logo)) return `<img src="${logo}" style="width:${size}px;height:${size}px;object-fit:contain;border-radius:6px" onerror="this.replaceWith(initialesNode('${clientNom.replace(/'/g,"\\'")}', ${size}))">`;
   return `<span style="font-size:${size * 0.5}px">${logo}</span>`;
+}
+
+function initialesHtml(nom, size = 40) {
+  const initiales = (nom || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:8px;background:var(--card-alt);color:var(--accent);font-weight:700;font-size:${size * 0.35}px">${initiales}</span>`;
+}
+
+function initialesNode(nom, size = 40) {
+  const el = document.createElement('span');
+  const initiales = (nom || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  el.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:8px;background:var(--card-alt);color:var(--accent);font-weight:700;font-size:${size * 0.35}px`;
+  el.textContent = initiales;
+  return el;
 }
 
 function addClient() {
@@ -775,7 +788,7 @@ function renderClients() {
   tbody.innerHTML = DB.clients.map(c => `
     <tr>
       <td>${c.nom}</td>
-      <td><span class="logo-mini">${logoHtml(c.logo, 28)}</span></td>
+      <td><span class="logo-mini">${logoHtml(c.logo, 28, c.nom)}</span></td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteClient('${c.id}')">Supprimer</button></td>
     </tr>
   `).join('');
@@ -969,7 +982,7 @@ function renderCards() {
 
     return `
     <div class="card">
-      <div class="card-logo">${client ? logoHtml(client.logo, 40) : '🏢'}</div>
+      <div class="card-logo">${client ? logoHtml(client.logo, 40, client.nom) : initialesHtml('', 40)}</div>
       <span class="badge ${badgeCls}">${badgeLbl}</span>
       <div class="card-title">${m.titre}</div>
       ${client ? `<div class="card-client">${client.nom}</div>` : ''}
