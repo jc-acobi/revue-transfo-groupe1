@@ -506,10 +506,12 @@
     </div>
   </div>
 
-  <table class="data-table" id="table-collabs">
+  <table class="data-table" id="table-collabs" style="width:100%">
     <thead><tr><th>Nom Prénom</th><th>Sexe</th><th>Date entrée</th><th>Date sortie</th><th>Co-pilote</th><th>Actions</th></tr></thead>
-    <tbody></tbody>
   </table>
+  <div style="max-height:296px;overflow-y:auto;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px">
+    <table class="data-table" style="width:100%"><tbody id="tbody-collabs"></tbody></table>
+  </div>
 
   <!-- CLIENTS -->
   <div class="section-title" style="margin-top:2.5rem">🏢 Clients</div>
@@ -863,7 +865,7 @@ function deleteCollaborateur(id) {
 }
 
 function renderCollaborateurs() {
-  const tbody = document.querySelector('#table-collabs tbody');
+  const tbody = document.getElementById('tbody-collabs');
   if (!DB.collaborateurs.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:1.5rem">Aucun collaborateur</td></tr>';
     return;
