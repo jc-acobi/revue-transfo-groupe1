@@ -557,7 +557,11 @@
   <div id="subtab-clients" class="subtab-content">
   <div class="section-title">🏢 Clients</div>
   <div class="form-card">
-    <h3>Ajouter un client</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
+      <h3>Ajouter un client</h3>
+      <button class="btn" style="background:var(--card-alt);color:var(--accent);border:1px solid var(--accent);font-size:0.85rem" onclick="document.getElementById('cl-import-input').click()">📥 Import en masse</button>
+      <input type="file" id="cl-import-input" accept=".xlsx,.xls" style="display:none" onchange="importClients(this)">
+    </div>
     <input type="hidden" id="cl-logo">
     <div class="form-row" style="align-items:center;gap:1.5rem">
       <div class="form-group" style="flex:1">
@@ -1175,6 +1179,39 @@ function refreshSelects() {
   fCollab.innerHTML = '<option value="">Tous</option>' +
     DB.collaborateurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('');
   fCollab.value = fCollab2;
+}
+
+function importClients(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets['Feuil1'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { toast('Onglet "Feuil1" introuvable', 'error'); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+      if (!rows.length) { toast('Fichier vide ou non reconnu', 'error'); return; }
+      let added = 0;
+      rows.forEach(row => {
+        const nom = (row['Client'] || '').toString().trim();
+        if (!nom) return;
+        const exists = DB.clients.find(c => c.nom.toLowerCase() === nom.toLowerCase());
+        if (!exists) {
+          DB.clients.push({ id: uid(), nom, logo: '' });
+          added++;
+        }
+      });
+      save();
+      renderClients();
+      refreshSelects();
+      toast(`${added} client(s) importé(s) ✓`);
+    } catch(err) {
+      toast('Erreur : ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ══════════════════════════════════════════
