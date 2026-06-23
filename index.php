@@ -589,6 +589,12 @@
         <input type="date" id="m-fin">
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Détails de la mission</label>
+        <textarea id="m-details" rows="3" placeholder="Description, contexte, objectifs…" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;font-family:inherit;font-size:0.95rem;resize:vertical"></textarea>
+      </div>
+    </div>
     <button class="btn btn-primary" onclick="addMission()">Ajouter la mission</button>
   </div>
 
@@ -953,20 +959,21 @@ function refreshSelects() {
 //  MISSIONS
 // ══════════════════════════════════════════
 function addMission(data = null) {
-  let titre, clientId, collabIds, debut, fin, statut;
+  let titre, clientId, collabIds, debut, fin, statut, details;
   if (data) {
-    ({ titre, clientId, collabIds, debut, fin, statut } = data);
+    ({ titre, clientId, collabIds, debut, fin, statut, details } = data);
   } else {
-    titre    = document.getElementById('m-titre').value.trim();
-    clientId = document.getElementById('m-client').value;
+    titre     = document.getElementById('m-titre').value.trim();
+    clientId  = document.getElementById('m-client').value;
     collabIds = Array.from(document.getElementById('m-collabs').selectedOptions).map(o => o.value);
-    debut    = document.getElementById('m-debut').value;
-    fin      = document.getElementById('m-fin').value;
-    statut   = document.getElementById('m-statut').value;
+    debut     = document.getElementById('m-debut').value;
+    fin       = document.getElementById('m-fin').value;
+    statut    = document.getElementById('m-statut').value;
+    details   = document.getElementById('m-details').value.trim();
   }
   if (!titre) { toast('Titre de mission requis', 'error'); return; }
 
-  DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, statut: statut || 'en_cours' });
+  DB.missions.push({ id: uid(), titre, clientId, collabIds, debut, fin, details: details || '', statut: statut || 'en_cours' });
   save();
 
   if (!data) {
@@ -975,6 +982,7 @@ function addMission(data = null) {
     document.getElementById('m-debut').value = '';
     document.getElementById('m-fin').value = '';
     document.getElementById('m-statut').value = 'en_cours';
+    document.getElementById('m-details').value = '';
     Array.from(document.getElementById('m-collabs').options).forEach(o => o.selected = false);
   }
   renderMissions();
