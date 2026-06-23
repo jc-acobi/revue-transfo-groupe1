@@ -580,6 +580,28 @@
   </div>
 </div>
 
+<!-- MODAL MODIFICATION CLIENT -->
+<div class="modal-overlay" id="modal-edit-client">
+  <div class="modal">
+    <h3>✏️ Modifier le client</h3>
+    <input type="hidden" id="edit-cl-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nom du client</label>
+        <input type="text" id="edit-cl-nom" placeholder="ex. EDF">
+      </div>
+      <div class="form-group">
+        <label>Logo (URL ou emoji)</label>
+        <input type="text" id="edit-cl-logo" placeholder="ex. 🏭 ou https://…/logo.png">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeEditClientModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEditClient()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL MODIFICATION MISSION -->
 <div class="modal-overlay" id="modal-edit">
   <div class="modal">
@@ -770,6 +792,35 @@ function addClient() {
   toast('Client ajouté ✓');
 }
 
+function openEditClient(id) {
+  const c = DB.clients.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('edit-cl-id').value   = c.id;
+  document.getElementById('edit-cl-nom').value  = c.nom;
+  document.getElementById('edit-cl-logo').value = c.logo || '';
+  document.getElementById('modal-edit-client').classList.add('open');
+}
+
+function closeEditClientModal() {
+  document.getElementById('modal-edit-client').classList.remove('open');
+}
+
+function saveEditClient() {
+  const id   = document.getElementById('edit-cl-id').value;
+  const nom  = document.getElementById('edit-cl-nom').value.trim();
+  const logo = document.getElementById('edit-cl-logo').value.trim();
+  if (!nom) { toast('Nom du client requis', 'error'); return; }
+  const idx = DB.clients.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  DB.clients[idx] = { id, nom, logo };
+  save();
+  closeEditClientModal();
+  renderClients();
+  refreshSelects();
+  renderCards();
+  toast('Client modifié ✓');
+}
+
 function deleteClient(id) {
   const c = DB.clients.find(x => x.id === id);
   openModal(`Supprimer le client "${c.nom}" ?`, () => {
@@ -786,10 +837,10 @@ function renderClients() {
     return;
   }
   tbody.innerHTML = DB.clients.map(c => `
-    <tr>
+    <tr onclick="openEditClient('${c.id}')" style="cursor:pointer" title="Cliquer pour modifier">
       <td>${c.nom}</td>
       <td><span class="logo-mini">${logoHtml(c.logo, 28, c.nom)}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteClient('${c.id}')">Supprimer</button></td>
+      <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteClient('${c.id}')">Supprimer</button></td>
     </tr>
   `).join('');
 }
