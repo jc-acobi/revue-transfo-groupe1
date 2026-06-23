@@ -631,14 +631,22 @@ let DB = {
 };
 let deleteCallback = null;
 
-// ── Persistance localStorage ──
+// ── Persistance base de données ──
 function save() {
-  localStorage.setItem('missions_acobi', JSON.stringify(DB));
+  fetch('api.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(DB)
+  }).catch(() => toast('Erreur de sauvegarde', 'error'));
 }
-function load() {
-  const raw = localStorage.getItem('missions_acobi');
-  if (raw) {
-    try { DB = JSON.parse(raw); } catch(e) {}
+
+async function load() {
+  try {
+    const res = await fetch('api.php');
+    const data = await res.json();
+    DB = { collaborateurs: data.collaborateurs || [], missions: data.missions || [], clients: data.clients || [] };
+  } catch(e) {
+    DB = { collaborateurs: [], missions: [], clients: [] };
   }
 }
 
@@ -1187,8 +1195,7 @@ function formatDate(d) {
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-load();
-renderAll();
+load().then(() => renderAll());
 </script>
 </body>
 </html>
