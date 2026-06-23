@@ -580,6 +580,51 @@
   </div>
 </div>
 
+<!-- MODAL MODIFICATION MISSION -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <h3>✏️ Modifier la mission</h3>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Titre de la mission</label>
+        <input type="text" id="edit-titre" placeholder="ex. Transformation digitale">
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select id="edit-statut">
+          <option value="en_cours">En cours</option>
+          <option value="terminee">Terminée</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Client</label>
+        <select id="edit-client"><option value="">-- Sélectionner --</option></select>
+      </div>
+      <div class="form-group">
+        <label>Collaborateurs</label>
+        <select id="edit-collabs" multiple title="Maintenez Ctrl/Cmd pour sélectionner plusieurs"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date de début</label>
+        <input type="date" id="edit-debut">
+      </div>
+      <div class="form-group">
+        <label>Date de fin</label>
+        <input type="date" id="edit-fin">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeEditModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEditMission()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 //  ÉTAT DE L'APPLICATION
@@ -799,6 +844,56 @@ function addMission(data = null) {
   renderMissions();
 }
 
+function openEditMission(id) {
+  const m = DB.missions.find(x => x.id === id);
+  if (!m) return;
+
+  document.getElementById('edit-id').value     = m.id;
+  document.getElementById('edit-titre').value  = m.titre;
+  document.getElementById('edit-statut').value = m.statut;
+  document.getElementById('edit-debut').value  = m.debut || '';
+  document.getElementById('edit-fin').value    = m.fin   || '';
+
+  // Remplir le select client
+  const editClient = document.getElementById('edit-client');
+  editClient.innerHTML = '<option value="">-- Sélectionner --</option>' +
+    DB.clients.map(c => `<option value="${c.id}" ${c.id === m.clientId ? 'selected' : ''}>${c.nom}</option>`).join('');
+
+  // Remplir le select collaborateurs
+  const editCollabs = document.getElementById('edit-collabs');
+  editCollabs.innerHTML = DB.collaborateurs.map(c =>
+    `<option value="${c.id}" ${(m.collabIds || []).includes(c.id) ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`
+  ).join('');
+
+  document.getElementById('modal-edit').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('modal-edit').classList.remove('open');
+}
+
+function saveEditMission() {
+  const id       = document.getElementById('edit-id').value;
+  const titre    = document.getElementById('edit-titre').value.trim();
+  const statut   = document.getElementById('edit-statut').value;
+  const clientId = document.getElementById('edit-client').value;
+  const collabIds = Array.from(document.getElementById('edit-collabs').selectedOptions).map(o => o.value);
+  const debut    = document.getElementById('edit-debut').value;
+  const fin      = document.getElementById('edit-fin').value;
+
+  if (!titre) { toast('Titre de mission requis', 'error'); return; }
+
+  const idx = DB.missions.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  DB.missions[idx] = { id, titre, statut, clientId, collabIds, debut, fin };
+  save();
+  closeEditModal();
+  renderMissions();
+  renderCards();
+  renderStats();
+  toast('Mission modifiée ✓');
+}
+
 function deleteMission(id) {
   const m = DB.missions.find(x => x.id === id);
   openModal(`Supprimer la mission "${m.titre}" ?`, () => {
@@ -824,13 +919,13 @@ function renderMissions() {
     const badgeCls = m.statut === 'en_cours' ? 'badge-encours' : 'badge-terminee';
     const badgeLbl = m.statut === 'en_cours' ? 'En cours' : 'Terminée';
     return `
-      <tr>
+      <tr onclick="openEditMission('${m.id}')" style="cursor:pointer" title="Cliquer pour modifier">
         <td>${m.titre}</td>
         <td>${client ? client.nom : '—'}</td>
         <td style="color:var(--text-muted)">${collabs || '—'}</td>
         <td style="color:var(--text-muted);font-size:0.82rem">${periode}</td>
         <td><span class="badge ${badgeCls}">${badgeLbl}</span></td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteMission('${m.id}')">Supprimer</button></td>
+        <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMission('${m.id}')">Supprimer</button></td>
       </tr>`;
   }).join('');
 }
