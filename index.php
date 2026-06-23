@@ -454,7 +454,11 @@
   <!-- COLLABORATEURS -->
   <div class="section-title">👤 Collaborateurs</div>
   <div class="form-card">
-    <h3 id="c-form-title">Ajouter un collaborateur</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
+      <h3 id="c-form-title">Ajouter un collaborateur</h3>
+      <button class="btn" style="background:var(--card-alt);color:var(--accent);border:1px solid var(--accent);font-size:0.85rem" onclick="document.getElementById('c-import-input').click()">📥 Import en masse</button>
+      <input type="file" id="c-import-input" accept=".xlsx,.xls" style="display:none" onchange="importCollaborateurs(this)">
+    </div>
     <input type="hidden" id="c-edit-id">
     <div class="form-row">
       <div class="form-group">
@@ -773,6 +777,83 @@ function renderCollaborateurs() {
       </td>
     </tr>`;
   }).join('');
+}
+
+function importCollaborateurs(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { toast('Fichier vide ou non reconnu', 'error'); return; }
+
+      // Première passe : créer tous les collaborateurs sans co-pilote
+      const newIds = {};
+      let added = 0;
+      rows.forEach(row => {
+        const nom    = (row['Nom']    || '').toString().trim();
+        const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
+        if (!nom || !prenom) return;
+        const sexe       = (row['Sexe']   || '').toString().trim();
+        const dateEntree = excelDateToISO(row['Entrée'] || row['Entree'] || row['Date entrée'] || '');
+        const dateSortie = excelDateToISO(row['Sortie'] || row['Date sortie'] || '');
+        const key = (prenom + ' ' + nom).toLowerCase();
+        const existing = DB.collaborateurs.find(c => (c.prenom + ' ' + c.nom).toLowerCase() === key);
+        if (existing) {
+          Object.assign(existing, { sexe, dateEntree, dateSortie });
+          newIds[key] = existing.id;
+        } else {
+          const id = uid();
+          DB.collaborateurs.push({ id, nom, prenom, sexe, dateEntree, dateSortie, copilote: '' });
+          newIds[key] = id;
+          added++;
+        }
+      });
+
+      // Deuxième passe : associer les co-pilotes
+      rows.forEach(row => {
+        const nom    = (row['Nom']    || '').toString().trim();
+        const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
+        if (!nom || !prenom) return;
+        const copiloteStr = (row['Co-pilote'] || row['Copilote'] || '').toString().trim();
+        if (!copiloteStr) return;
+        const key = (prenom + ' ' + nom).toLowerCase();
+        const collab = DB.collaborateurs.find(c => c.id === newIds[key]);
+        if (!collab) return;
+        const coKey = copiloteStr.toLowerCase();
+        const co = DB.collaborateurs.find(c => (c.prenom + ' ' + c.nom).toLowerCase() === coKey);
+        if (co) collab.copilote = co.id;
+      });
+
+      save();
+      renderCollaborateurs();
+      refreshSelects();
+      toast(`${added} collaborateur(s) importé(s) ✓`);
+    } catch(err) {
+      toast('Erreur lors de la lecture du fichier', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function excelDateToISO(val) {
+  if (!val && val !== 0) return '';
+  if (typeof val === 'number') {
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return d.toISOString().split('T')[0];
+  }
+  const s = val.toString().trim();
+  if (!s) return '';
+  // Format DD/MM/YYYY
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  // Format YYYY-MM-DD déjà correct
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return '';
 }
 
 // ══════════════════════════════════════════
