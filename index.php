@@ -473,8 +473,8 @@
         <label>Sexe</label>
         <select id="c-sexe">
           <option value="">-- Sélectionner --</option>
-          <option value="Homme">Homme</option>
-          <option value="Femme">Femme</option>
+          <option value="Masculin">Masculin</option>
+          <option value="Féminin">Féminin</option>
         </select>
       </div>
     </div>
@@ -799,8 +799,7 @@ function importCollaborateurs(input) {
         const nom    = (row['Nom']    || '').toString().trim();
         const prenom = (row['Prénom'] || row['Prenom'] || '').toString().trim();
         if (!nom || !prenom) return;
-        const sexeRaw    = (row['Sexe'] || '').toString().trim().toLowerCase();
-        const sexe       = sexeRaw === 'masculin' ? 'Homme' : (sexeRaw === 'féminin' || sexeRaw === 'feminin') ? 'Femme' : (row['Sexe'] || '').toString().trim();
+        const sexe       = (row['Sexe'] || '').toString().trim();
         const dateEntree = excelDateToISO(row['Entrée'] || row['Entree'] || row['Date entrée'] || '');
         const dateSortie = excelDateToISO(row['Sortie'] || row['Date sortie'] || '');
         const key = (prenom + ' ' + nom).toLowerCase();
