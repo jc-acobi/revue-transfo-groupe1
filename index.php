@@ -774,7 +774,7 @@ function renderCollaborateurs() {
 // ══════════════════════════════════════════
 //  CLIENTS
 // ══════════════════════════════════════════
-function isUrl(s) { return s.startsWith('http'); }
+function isUrl(s) { return s.startsWith('http') || s.startsWith('data:'); }
 
 function logoHtml(logo, size = 40, clientNom = '') {
   if (!logo) return initialesHtml(clientNom, size);
