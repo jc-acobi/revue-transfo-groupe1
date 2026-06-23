@@ -835,7 +835,8 @@ function importCollaborateurs(input) {
       refreshSelects();
       toast(`${added} collaborateur(s) importé(s) ✓`);
     } catch(err) {
-      toast('Erreur lors de la lecture du fichier', 'error');
+      toast('Erreur : ' + err.message, 'error');
+      console.error(err);
     }
   };
   reader.readAsArrayBuffer(file);
