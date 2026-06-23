@@ -1460,12 +1460,12 @@ function importMissions(input) {
       const skipped = [];
 
       rows.forEach((row, i) => {
-        const titre      = (row['Titre de la mission'] || row['Titre Mission'] || '').toString().trim();
+        const titre      = (row['Titre de la mission'] || '').toString().trim();
         const clientNom  = (row['Client'] || '').toString().trim();
         const collabStr  = (row['Collaborateurs'] || '').toString().trim();
-        const debut      = excelDateToISO(row['Date de début'] || row['Date Début'] || row['Date debut'] || '');
-        const fin        = excelDateToISO(row['Date de fin']   || row['Date Fin']   || row['Date fin']   || '');
-        const details    = (row['Détails de la mission'] || row['Détails Missions'] || '').toString().trim();
+        const debut      = excelDateToISO(row['Date Début Mission'] || row['Date Début'] || row['Date debut'] || '');
+        const fin        = excelDateToISO(row['Date Fin Mission']   || row['Date Fin']   || row['Date fin']  || '');
+        const details    = (row['Détails Missions'] || row['Détails de la mission'] || '').toString().trim();
         const lineNum    = i + 2;
 
         if (!clientNom) { skipped.push(`Ligne ${lineNum} (${titre || '—'}) : client manquant`); return; }
