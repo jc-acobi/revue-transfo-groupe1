@@ -1455,8 +1455,6 @@ function importMissions(input) {
       if (!ws) { toast('Onglet "Feuil1" introuvable', 'error'); return; }
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
       if (!rows.length) { toast('Fichier vide', 'error'); return; }
-      console.log('Première ligne missions :', JSON.stringify(rows[0]));
-
       let created = 0, updated = 0;
       const skipped = [];
 
@@ -1482,8 +1480,13 @@ function importMissions(input) {
         let client = DB.clients.find(c => c.nom.toLowerCase() === clientNom.toLowerCase());
         if (!client) { client = { id: uid(), nom: clientNom, logo: '' }; DB.clients.push(client); }
 
-        // Mission existante (même titre + client) → mise à jour
-        const existing = DB.missions.find(m => m.titre.toLowerCase() === titre.toLowerCase() && m.clientId === client.id);
+        // Mission existante (même collaborateur + client + dates) → mise à jour
+        const existing = DB.missions.find(m =>
+          m.clientId === client.id &&
+          m.debut === debut &&
+          m.fin === (fin || '') &&
+          (m.collabIds || []).includes(collab.id)
+        );
         if (existing) {
           if (!existing.collabIds.includes(collab.id)) existing.collabIds.push(collab.id);
           if (debut) existing.debut = debut;
