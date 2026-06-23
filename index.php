@@ -687,7 +687,15 @@
         <option value="">Tous</option>
       </select>
     </div>
-    <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:0.5rem 1rem;font-size:0.85rem" onclick="document.getElementById('param-f-client').value='';document.getElementById('param-f-collab').value='';renderMissions()">✕ Effacer</button>
+    <div style="display:flex;flex-direction:column;gap:0.3rem">
+      <label style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em">Statut</label>
+      <select id="param-f-statut" onchange="renderMissions()" style="background:var(--card-alt);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;font-family:inherit;font-size:0.9rem;min-width:150px">
+        <option value="">Tous</option>
+        <option value="en_cours">En cours</option>
+        <option value="terminee">Terminée</option>
+      </select>
+    </div>
+    <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:0.5rem 1rem;font-size:0.85rem" onclick="document.getElementById('param-f-client').value='';document.getElementById('param-f-collab').value='';document.getElementById('param-f-statut').value='';renderMissions()">✕ Effacer</button>
   </div>
 
   <table class="data-table" id="table-missions">
@@ -1425,11 +1433,14 @@ function renderMissions() {
     pfClient.value = prevClient; pfCollab.value = prevCollab;
   }
 
+  const pfStatut = document.getElementById('param-f-statut');
   const fClient = pfClient ? pfClient.value : '';
   const fCollab = pfCollab ? pfCollab.value : '';
+  const fStatut = pfStatut ? pfStatut.value : '';
   let list = DB.missions.filter(m => {
     if (fClient && m.clientId !== fClient) return false;
     if (fCollab && !(m.collabIds || []).includes(fCollab)) return false;
+    if (fStatut && getStatut(m) !== fStatut) return false;
     return true;
   });
   list = applySortMissions(list);
