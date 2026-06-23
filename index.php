@@ -1286,7 +1286,6 @@ function renderCards() {
       ${client ? `<div class="card-client">${client.nom}</div>` : ''}
       ${collabs ? `<div class="card-collab">👤 ${collabs}</div>` : ''}
       ${periode ? `<div class="card-dates">📅 ${periode}</div>` : ''}
-      <div class="card-arrow">→</div>
     </div>`;
   }).join('');
 }
