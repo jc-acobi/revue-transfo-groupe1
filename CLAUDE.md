@@ -85,6 +85,24 @@ Chaque groupe dispose d'une base de données privée **par environnement** (bin�
   - Ne jamais afficher ni écrire d'identifiant de connexion dans le code ou les pages.
   - La base est privée au groupe et à l'environnement : ne pas chercher à accéder à une autre.
 
+## Opérations sur les données (suppression, copie entre environnements)
+Ces demandes sont sensibles et seront souvent formulées de façon vague (« efface tout », « copie dev »). Avant toute action, TOUJOURS :
+1. **Reformuler précisément** : quelle base **source**, quelle base **cible**, **quelles** données exactement.
+2. **Annoncer ce qui sera perdu ou écrasé**, et **qui est impacté** (rappel : `dev` est partagé entre les deux binômes ; `prod` est la version visible sur le portail).
+3. **Attendre une confirmation explicite.**
+
+Réalisation :
+- Il n'y a pas de console base directe : préparer une petite page PHP qui effectue l'opération, l'enregistrer (déploiement), demander à l'utilisateur de l'ouvrir une fois, puis **retirer cette page** une fois le travail fait.
+- Base de l'environnement courant : `db()`. Autre base **du même groupe** : `db_env('dev')`, `db_env('prod')`, `db_env('binome1')`, `db_env('binome2')`.
+- On ne peut agir que sur les bases du groupe courant ; les autres groupes sont inaccessibles (interdit par la base elle-même).
+
+Exemple — copier les données de l'intégration (`dev`) vers l'espace courant, après confirmation :
+```php
+$source = db_env('dev'); // base d'où l'on copie
+$cible  = db();          // base de l'environnement courant
+// … lire les données de $source et les écrire dans $cible …
+```
+
 ## Personnaliser la fiche du portail
 La façon dont l'application du groupe apparaît sur le portail est décrite dans le fichier `manifest.json` :
 - `name` : le nom affiché sur la carte du portail.
