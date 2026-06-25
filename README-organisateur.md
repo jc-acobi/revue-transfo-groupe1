@@ -1,7 +1,7 @@
 # Atelier vibe coding — gabarit (guide organisateur)
 
 > Ce dépôt est le **gabarit générique**. Il ne se déploie jamais lui-même. On en
-> fabrique un dépôt par groupe (`groupe1` … `groupe6`).
+> fabrique un dépôt par groupe (`revue-transfo-groupe1` … `groupe6`).
 > Ce fichier est destiné à **l'organisateur**, pas aux participants.
 
 ## Principe
@@ -27,36 +27,69 @@ Le portail (`interne.acobi.fr`) scanne automatiquement `/var/www/apps/*/manifest
 Dès que la version finale est publiée dans `/var/www/apps/<groupe>` (avec un `manifest.json`
 où `visible: true`), une carte apparaît sur le portail. **Aucune modification du portail n'est nécessaire.**
 
+## Prérequis serveur — UNE SEULE FOIS (pas par groupe)
+
+Sur le VPS, avec l'utilisateur de déploiement (`VPS_USER`, ici `ubuntu`) :
+
+1. Créer le dossier des espaces de travail et lui en donner la propriété
+   (`/var/www/apps` existe déjà et appartient à `VPS_USER`) :
+
+   ```bash
+   sudo mkdir -p /var/www/workshop
+   sudo chown <VPS_USER>: /var/www/workshop
+   ```
+
+2. Router les URL vers ces dossiers, qui sont à côté de la racine du portail
+   (`/var/www/portail`), via deux liens symboliques :
+
+   ```bash
+   ln -s /var/www/apps     /var/www/portail/apps
+   ln -s /var/www/workshop /var/www/portail/workshop
+   ```
+
+   Ces liens pointent vers les dossiers entiers → ils couvrent **tous** les groupes,
+   présents et futurs. C'est tout : les déploiements créent ensuite eux-mêmes les
+   sous-dossiers de chaque groupe.
+
 ## Créer le dépôt d'un groupe
 
 1. Sur GitHub, marquer ce dépôt comme *template repository* (Settings → « Template repository »).
-2. Cliquer **« Use this template »** pour créer `revue-transfo-groupe2` (puis `…3`, `…4`, etc.).
-3. Cloner le nouveau dépôt en local, puis l'instancier :
+2. Cliquer **« Use this template »** pour créer `revue-transfo-groupe2` (puis `…3`, etc.).
+   Le dépôt doit être **public** (voir plus bas).
+3. Ajouter les secrets du dépôt : `VPS_HOST`, `VPS_USER`, `VPS_PASSWORD`
+   (Settings → Secrets and variables → Actions). Ils ne sont pas copiés depuis le gabarit.
+4. Cloner le nouveau dépôt en local, puis l'instancier :
 
    ```powershell
    ./nouveau-groupe.ps1 -Numero 2 -Pousser
    ```
 
-   Le script remplace les repères `__GROUPE__` / `__GROUPE_LABEL__`, crée les espaces de
-   travail `dev`, `binome1`, `binome2`, et publie le tout.
+   Les 4 déploiements partent et **créent automatiquement** les dossiers serveur du groupe.
+   **Aucune manipulation serveur par groupe.**
 
-> Les noms de dossiers serveur sont dérivés du numéro de groupe (`groupe2`, `groupe3`…),
-> pas du nom du dépôt GitHub. Le garde-fou `if: github.repository != 'jc-acobi/revue-transfo'`
-> dans chaque workflow empêche le gabarit de se déployer.
+## Remettre un groupe à neuf
 
-## Prérequis serveur (une fois par groupe, avant l'atelier)
+Entre deux sessions de test, ou avant l'atelier, pour repartir d'une page vierge :
 
-1. Renseigner les secrets du dépôt du groupe : `VPS_HOST`, `VPS_USER`, `VPS_PASSWORD`.
-2. Sur le serveur, préparer chaque dossier comme un clone positionné sur la bonne branche :
+```powershell
+./reset-groupe.ps1 -Pousser
+```
 
-   ```bash
-   git clone -b main    <url-du-depot-groupe> /var/www/apps/groupe2
-   git clone -b dev      <url-du-depot-groupe> /var/www/workshop/groupe2/dev
-   git clone -b binome1  <url-du-depot-groupe> /var/www/workshop/groupe2/binome1
-   git clone -b binome2  <url-du-depot-groupe> /var/www/workshop/groupe2/binome2
-   ```
+Le script réaligne les 4 branches sur le repère `etat-initial` (posé à l'instanciation)
+et republie. **Tout le travail effectué après l'état initial est effacé.**
 
-3. Vérifier que le serveur web sert ces dossiers aux adresses indiquées plus haut.
+## Déploiement auto-réparant
+
+Sur le VPS, chaque workflow : si le dossier cible n'est pas encore un clone Git, il le
+crée (`git clone`) ; sinon il le met à jour (`git fetch` + `git reset --hard`). L'URL du
+dépôt est déduite de `github.repository`. Le garde-fou `if: github.repository != 'jc-acobi/revue-transfo'`
+empêche le gabarit de se déployer.
+
+## Dépôts publics
+
+Les dépôts de groupe sont **publics** afin que le VPS puisse les cloner sans identifiants
+GitHub (le portail l'est aussi). Le code ne contient aucun secret ; ceux-ci vivent dans
+GitHub → Actions secrets.
 
 ## Repères remplacés à l'instanciation
 
@@ -64,3 +97,10 @@ où `visible: true`), une carte apparaît sur le portail. **Aucune modification 
 |---|---|---|
 | `__GROUPE__` | `groupe2` | `CLAUDE.md`, workflows |
 | `__GROUPE_LABEL__` | `Groupe 2` | `manifest.json`, `index.php` |
+
+## En cas de souci
+
+- **Run rouge `connection reset by peer`** : aléa SSH (les 4 déploiements frappent le VPS
+  en même temps). Relancer le run suffit.
+- **403 sur `/apps/...`** : Apache bloque le suivi des liens symboliques → activer
+  `Options +FollowSymLinks`, ou remplacer les liens par des `Alias` dans le vhost.

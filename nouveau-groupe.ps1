@@ -17,8 +17,6 @@ param(
   [switch]$Pousser
 )
 
-$ErrorActionPreference = 'Stop'
-
 $slug  = "groupe$Numero"
 $label = "Groupe $Numero"
 
@@ -53,9 +51,13 @@ git branch -f dev main
 git branch -f binome1 main
 git branch -f binome2 main
 
+# Repère de remise à neuf (utilisé par reset-groupe.ps1).
+git tag -f etat-initial main
+
 if ($Pousser) {
   git push -u origin main dev binome1 binome2
-  Write-Host "Publié. Pensez aux secrets GitHub et aux dossiers serveur (voir README-organisateur.md)."
+  git push -f origin etat-initial
+  Write-Host "Publié. Avec l'auto-réparation, aucune manip serveur par groupe n'est nécessaire (voir README-organisateur.md)."
 } else {
-  Write-Host "Pour publier : git push -u origin main dev binome1 binome2"
+  Write-Host "Pour publier : git push -u origin main dev binome1 binome2 ; git push -f origin etat-initial"
 }
